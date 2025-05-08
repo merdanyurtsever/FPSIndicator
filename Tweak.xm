@@ -2,6 +2,19 @@
 #import <substrate.h>
 #import <objc/runtime.h>
 
+// Define OpenGL ES silence deprecation warnings before any OpenGL imports
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+
+// Import frameworks
+#import <OpenGLES/EAGL.h>
+#import <OpenGLES/ES1/gl.h>
+#import <OpenGLES/ES1/glext.h>
+#import <OpenGLES/ES2/gl.h>
+#import <OpenGLES/ES2/glext.h>
+#import <Metal/Metal.h>
+#import <QuartzCore/CAMetalLayer.h>
+
 // Define constants at the top level
 #define kFPSLabelWidth 50
 #define kFPSLabelHeight 20
@@ -605,6 +618,27 @@ void frameTick(){
 }
 %end
 
+// Additional Metal-specific hooks for newer PUBG versions
+%hook MTLTextureDescriptor
++ (MTLTextureDescriptor *)texture2DDescriptorWithPixelFormat:(MTLPixelFormat)pixelFormat 
+                                                       width:(NSUInteger)width 
+                                                      height:(NSUInteger)height 
+                                                   mipmapped:(BOOL)mipmapped {
+    MTLTextureDescriptor *result = %orig;
+    if (width > 1000 && height > 1000) {
+        // This is likely a main game texture/framebuffer
+        dispatch_async(dispatch_get_main_queue(), ^{
+            // Make sure our window is at the highest level possible for PUBG
+            if (fpsWindow && isPUBGProcess()) {
+                fpsWindow.windowLevel = UIWindowLevelStatusBar + 10000;
+                fpsWindow.hidden = NO;
+            }
+        });
+    }
+    return result;
+}
+%end
+
 // Additional PUBG-specific hooks for Unreal Engine
 %hook FPlatformMisc
 + (void)LowLevelOutputDebugString:(NSString *)message {
@@ -712,3 +746,5 @@ void frameTick(){
         }
     }
 }
+
+#pragma clang diagnostic pop
