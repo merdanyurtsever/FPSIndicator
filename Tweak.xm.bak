@@ -13,11 +13,10 @@ static NSString *const kPUBGProcessNames[] = {
 };
 
 // Forward declarations
-enum FPSMode {
+enum FPSMode{
     kModeAverage=1,
     kModePerSecond
 };
-
 // Forward declare functions used before they are defined
 static BOOL isPUBGProcess(void);
 
@@ -220,10 +219,10 @@ static BOOL isScreenRecording = NO;
     
     if (pan.state == UIGestureRecognizerStateEnded) {
         // Save position
-        NSMutableDictionary *prefs = [[NSMutableDictionary alloc] initWithContentsOfFile:kPrefPath];
+        NSMutableDictionary *prefs = [[NSMutableDictionary alloc] initWithContentsOfFile:@THEOS_PACKAGE_INSTALL_PREFIX"/var/mobile/Library/Preferences/com.fpsindicator.plist"];
         if (!prefs) prefs = [NSMutableDictionary dictionary];
         prefs[@"labelPosition"] = @[@(newCenter.x), @(newCenter.y)];
-        [prefs writeToFile:kPrefPath atomically:YES];
+        [prefs writeToFile:@THEOS_PACKAGE_INSTALL_PREFIX"/var/mobile/Library/Preferences/com.fpsindicator.plist" atomically:YES];
     }
 }
 
@@ -296,6 +295,13 @@ static BOOL isPUBGProcess() {
         }
     }
     return NO;
+}
+
+    }
+    
+    CGRect frame = fpsWindow.fpsLabel.frame;
+    frame.origin = CGPointMake(bounds.size.width - kFPSLabelWidth - 5 - safeOffsetX, safeOffsetY);
+    fpsWindow.fpsLabel.frame = frame;
 }
 
 static void updateFPSRefreshRate(void) {

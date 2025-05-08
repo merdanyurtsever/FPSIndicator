@@ -1,11 +1,12 @@
-export TARGET = iphone:clang:15.6:15.0
-export ARCHS = arm64
-export SYSROOT = $(THEOS)/sdks/iPhoneOS15.6.sdk
+TARGET = iphone:clang:15.6:15.0
+ARCHS = arm64
+SYSROOT = $(THEOS)/sdks/iPhoneOS15.6.sdk
 
 INSTALL_TARGET_PROCESSES = SpringBoard backboardd
 
+include $(THEOS)/makefiles/common.mk
+
 TWEAK_NAME = FPSIndicator
-BUNDLE_NAME = FPSIndicator
 
 FPSIndicator_FILES = Tweak.xm
 FPSIndicator_CFLAGS = -fobjc-arc -include Prefix.pch
@@ -15,7 +16,8 @@ FPSIndicator_INSTALL_PATH = /var/jb/Library/MobileSubstrate/DynamicLibraries
 
 SUBPROJECTS += fpsindicatorpref
 
-include $(THEOS)/makefiles/common.mk
+include $(THEOS_MAKE_PATH)/tweak.mk
+include $(THEOS_MAKE_PATH)/aggregate.mk
 
 # Test configuration
 TEST_NAME = FPSIndicatorTests
@@ -24,24 +26,10 @@ $(TEST_NAME)_FILES = $(TESTS_DIR)/FPSIndicatorTests.m
 $(TEST_NAME)_FRAMEWORKS = XCTest OCMock UIKit Metal MetalKit
 $(TEST_NAME)_CFLAGS = -fobjc-arc
 
-# Main targets
-all:: tweak tests
-
-tweak::
-	@$(MAKE) -f $(THEOS_MAKE_PATH)/tweak.mk
-
 # Test targets
-tests::
+test::
 	@$(MAKE) -f $(THEOS_MAKE_PATH)/test.mk
-
-test:: tests
 	@./$(THEOS_OBJ_DIR)/$(TEST_NAME)
-
-clean::
-	rm -rf $(THEOS_OBJ_DIR)
-	rm -f $(TEST_NAME)
-
-include $(THEOS_MAKE_PATH)/aggregate.mk
 
 # Proper rootless staging
 internal-stage::
