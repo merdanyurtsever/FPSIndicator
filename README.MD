@@ -1,18 +1,17 @@
-# FPSIndicator
+# FPSIndicator (Revamped)
 
-A lightweight, non-intrusive FPS counter for iOS that works system-wide and with special optimizations for games.
+A lightweight, non-intrusive FPS counter for iOS that works system-wide with a simplified, efficient architecture.
 
 ## Features
 
-- **Real-time FPS monitoring** - See your frame rate in real-time across all apps and games
-- **Multiple calculation methods** - Choose between average FPS (smoother) or per-second FPS (more responsive)
-- **Game engine optimization** - Special support for Unity, Unreal, and PUBG Mobile games
-- **Position presets** - Easily position the indicator in any corner or drag to a custom position
-- **Appearance customization** - Color, opacity, size, and theme options
-- **Privacy mode** - Automatically hide the indicator in banking and other sensitive apps
+- **Accurate FPS monitoring** - See your frame rate in real-time across all apps and games
+- **Direct display sync** - Uses CADisplayLink for precise frame timing
+- **Drag-to-position** - Easily position the indicator anywhere on screen with a simple drag gesture
+- **Appearance customization** - Color coding, opacity, and size options
+- **Privacy mode** - Automatically hide the indicator in sensitive apps
 - **iOS compatibility** - Supports iOS 12-17 with proper UIScene support for iPad Stage Manager
-- **Performance data export** - Log and export FPS data for analysis
-- **Low power mode** - Automatically adjusts refresh rate to conserve battery
+- **Battery optimized** - Low power impact with adaptive refresh rate
+- **Screen recording awareness** - Automatically hides during screen recording
 
 ## Installation
 
@@ -22,18 +21,18 @@ A lightweight, non-intrusive FPS counter for iOS that works system-wide and with
 
 ## Usage
 
-After installation, a small FPS counter will appear in the top-right corner of your screen.
+After installation, a small FPS counter will appear in the top corner of your screen.
 
-- **Drag** the counter to reposition it
+- **Drag** the counter to reposition it anywhere on screen
 - **Configure** the indicator in Settings app → FPSIndicator
 
 ## Technical Details
 
-FPSIndicator uses a modular architecture:
+FPSIndicator uses a streamlined architecture:
 
-- **FPSCalculator** - Handles the frame rate calculation with thread safety and power optimization
-- **FPSDisplayWindow** - Manages the UI display with customization and positioning
-- **FPSGameSupport** - Provides specialized support for different game engines
+- **FPSCounter** - Uses CADisplayLink for accurate frame counting with statistical smoothing
+- **FPSDisplay** - Provides a lightweight, draggable overlay with color coding
+- **FPSPreferences** - Centralizes preference management with a single source of truth
 
 ## Privacy Mode
 
@@ -53,31 +52,34 @@ MIT License - See LICENSE file for details.
 
 ## Troubleshooting
 
-### FPS not showing in games?
+### Battery optimization
 
-Some games use custom rendering methods. Try these solutions:
+The tweak is designed to have minimal impact on battery life:
 
-1. Open FPSIndicator settings and increase opacity
-2. Make sure the game is not in your privacy list
-3. Some games may require a higher window level setting
+1. Uses CADisplayLink instead of rendering hooks
+2. Updates the display at 10Hz instead of every frame
+3. Simple UI with minimal overhead
 
-### Battery drain concerns?
+### Display issues
 
-The tweak automatically reduces refresh rate in low power mode. You can also:
+If the FPS indicator is not appearing:
 
-1. Use a smaller font size
-2. Disable logging when not needed
-3. Disable the tweak in games where you don't need it
+1. Check that the app is not in your privacy or disabled list
+2. Try toggling the tweak off and on in Settings
+3. Respring your device
 
 ## Changelog
 
+### v2.0.0
+- Complete architectural revamp for reliability and performance
+- Switched to CADisplayLink for accurate frame timing
+- Simplified UI with drag positioning
+- Improved battery efficiency
+- Better compatibility with iOS windowing system
+- Eliminated game-specific hacks for a universal solution
+
 ### v1.0.0
-- Complete rewrite with modular architecture
-- Enhanced game engine support
-- Added privacy mode
-- Added position presets
-- Added FPS data export
-- Improved thread safety and performance
+- Original modular architecture release
 
 ### v0.0.5
 - Initial public release

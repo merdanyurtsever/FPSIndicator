@@ -1,9 +1,9 @@
 Package: com.fpsindicator
 Name: FPSIndicator
-Depends: firmware (>= 15.0)
-Version: 0.0.5
+Depends: firmware (>= 12.0)
+Version: 2.0.0
 Architecture: iphoneos-arm64
-Description: Real-time FPS indicator for games (Rootless)
+Description: Lightweight FPS indicator with CADisplayLink-based accurate frame counting (Rootless)
 Maintainer: Anonymous
 Author: Anonymous
 Section: Tweaks

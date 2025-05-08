@@ -116,8 +116,28 @@
     NSString *path = [NSString stringWithFormat:@THEOS_PACKAGE_INSTALL_PREFIX"/var/mobile/Library/Preferences/com.fpsindicator.plist"];
     NSDictionary *settings = [NSDictionary dictionaryWithContentsOfFile:path] ?: @{};
     
-    if (settings[@"enabledApps"]) {
-        [self.enabledApps addObjectsFromArray:settings[@"enabledApps"]];
+    // In our revamped system, we use a "disabledApps" array instead of "enabledApps"
+    // So we need to invert the logic here
+    if (settings[@"disabledApps"]) {
+        NSArray *disabledApps = settings[@"disabledApps"];
+        
+        // Initialize with all possible apps
+        NSMutableArray *allPossibleApps = [NSMutableArray array];
+        for (NSDictionary *app in [self getInstalledApps]) {
+            [allPossibleApps addObject:app[@"bundleID"]];
+        }
+        
+        // Remove the disabled ones to get enabled apps
+        for (NSString *bundleID in disabledApps) {
+            [allPossibleApps removeObject:bundleID];
+        }
+        
+        // If no apps are disabled, enable all
+        if (disabledApps.count == 0) {
+            [self.enabledApps addObject:@"*"];
+        } else {
+            [self.enabledApps addObjectsFromArray:allPossibleApps];
+        }
     } else {
         // Default to enable on all apps
         self.enabledApps = [NSMutableArray arrayWithObject:@"*"];
@@ -128,8 +148,29 @@
     NSString *path = [NSString stringWithFormat:@THEOS_PACKAGE_INSTALL_PREFIX"/var/mobile/Library/Preferences/com.fpsindicator.plist"];
     NSMutableDictionary *settings = [NSMutableDictionary dictionaryWithContentsOfFile:path] ?: [NSMutableDictionary dictionary];
     
-    // Store the enabled apps list
-    settings[@"enabledApps"] = self.enabledApps;
+    // Convert enabledApps to disabledApps for the revamped system
+    NSMutableArray *disabledApps = [NSMutableArray array];
+    
+    // Special case: if all apps are enabled, disabledApps should be empty
+    if ([self.enabledApps containsObject:@"*"]) {
+        settings[@"disabledApps"] = @[];
+    } else {
+        // Get all possible apps
+        NSMutableArray *allPossibleApps = [NSMutableArray array];
+        for (NSDictionary *app in [self getInstalledApps]) {
+            [allPossibleApps addObject:app[@"bundleID"]];
+        }
+        
+        // Determine which ones are disabled by finding those not in enabledApps
+        for (NSString *bundleID in allPossibleApps) {
+            if (![self.enabledApps containsObject:bundleID] && ![bundleID isEqualToString:@"*"]) {
+                [disabledApps addObject:bundleID];
+            }
+        }
+        
+        settings[@"disabledApps"] = disabledApps;
+    }
+    
     [settings writeToFile:path atomically:YES];
     
     // Notify the tweak

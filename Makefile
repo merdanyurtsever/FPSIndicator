@@ -8,10 +8,10 @@ include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = FPSIndicator
 
-# Updated to include new modular source files
-FPSIndicator_FILES = Tweak.xm Sources/FPSCalculator.m Sources/FPSDisplayWindow.m Sources/FPSGameSupport.m Sources/FPSGraphView.m Sources/FPSThermalMonitor.m Sources/FPSAlternativeOverlay.m
+# Files updated for the revamped version
+FPSIndicator_FILES = Tweak.xm Sources/FPSCounter.m Sources/FPSDisplay.m Sources/FPSPreferences.m
 FPSIndicator_CFLAGS = -fobjc-arc -include Prefix.pch
-FPSIndicator_FRAMEWORKS = UIKit Metal MetalKit
+FPSIndicator_FRAMEWORKS = UIKit
 FPSIndicator_LIBRARIES = substrate
 FPSIndicator_INSTALL_PATH = /var/jb/Library/MobileSubstrate/DynamicLibraries
 
@@ -24,7 +24,7 @@ include $(THEOS_MAKE_PATH)/aggregate.mk
 TEST_NAME = FPSIndicatorTests
 TESTS_DIR = tests
 $(TEST_NAME)_FILES = $(TESTS_DIR)/FPSIndicatorTests.m
-$(TEST_NAME)_FRAMEWORKS = XCTest OCMock UIKit Metal MetalKit
+$(TEST_NAME)_FRAMEWORKS = XCTest OCMock UIKit
 $(TEST_NAME)_CFLAGS = -fobjc-arc
 
 # Test targets
