@@ -1,11 +1,11 @@
-Package: com.brend0n.unityfpsindicator
-Name: FPSIndicator 
-Depends: mobilesubstrate, com.opa334.altlist
-Version: 0.0.4.1
-Architecture: iphoneos-arm
-Description: real-time fps indicator for games
-Maintainer: Brend0n <brendonjkding@126.com>
-Author: Brend0n <brendonjkding@126.com>
+Package: com.fpsindicator
+Name: FPSIndicator
+Depends: firmware (>= 15.0)
+Version: 0.0.5
+Architecture: iphoneos-arm64
+Description: Real-time FPS indicator for games (Rootless)
+Maintainer: Anonymous
+Author: Anonymous
 Section: Tweaks
-Depiction: http://brendonjkding.github.io/depictions/web/?p=com.brend0n.unityfpsindicator
-SileoDepiction: http://brendonjkding.github.io/depictions/web/com.brend0n.unityfpsindicator/depiction.json
+Depiction: http://brendonjkding.github.io/depictions/web/?p=com.brend0n.fpsindicator
+SileoDepiction: http://brendonjkding.github.io/depictions/web/com.brend0n.fpsindicator/depiction.json

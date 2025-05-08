@@ -1,27 +1,53 @@
-ifdef SIMULATOR
-export TARGET = simulator:clang:latest:8.0
-else
-export TARGET = iphone:clang:latest:7.0
-	ifeq ($(debug),0)
-		export ARCHS = armv7 arm64 arm64e
-	else
-		export ARCHS = arm64 arm64e
-	endif
-endif
+export TARGET = iphone:clang:15.6:15.0
+export ARCHS = arm64
+export SYSROOT = $(THEOS)/sdks/iPhoneOS15.6.sdk
+
+INSTALL_TARGET_PROCESSES = SpringBoard backboardd
 
 TWEAK_NAME = FPSIndicator
+BUNDLE_NAME = FPSIndicator
 
-FPSIndicator_FILES = Tweak.x
-FPSIndicator_CFLAGS = -fobjc-arc -Wno-error=unused-variable -Wno-error=unused-function -include Prefix.pch
-
-FPSIndicator_FILES += libcolorpicker/libcolorpicker.mm
+FPSIndicator_FILES = Tweak.xm
+FPSIndicator_CFLAGS = -fobjc-arc -include Prefix.pch
+FPSIndicator_FRAMEWORKS = UIKit Metal MetalKit
+FPSIndicator_LIBRARIES = substrate
+FPSIndicator_INSTALL_PATH = /var/jb/Library/MobileSubstrate/DynamicLibraries
 
 SUBPROJECTS += fpsindicatorpref
 
 include $(THEOS)/makefiles/common.mk
-include $(THEOS_MAKE_PATH)/tweak.mk
+
+# Test configuration
+TEST_NAME = FPSIndicatorTests
+TESTS_DIR = tests
+$(TEST_NAME)_FILES = $(TESTS_DIR)/FPSIndicatorTests.m
+$(TEST_NAME)_FRAMEWORKS = XCTest OCMock UIKit Metal MetalKit
+$(TEST_NAME)_CFLAGS = -fobjc-arc
+
+# Main targets
+all:: tweak tests
+
+tweak::
+	@$(MAKE) -f $(THEOS_MAKE_PATH)/tweak.mk
+
+# Test targets
+tests::
+	@$(MAKE) -f $(THEOS_MAKE_PATH)/test.mk
+
+test:: tests
+	@./$(THEOS_OBJ_DIR)/$(TEST_NAME)
+
+clean::
+	rm -rf $(THEOS_OBJ_DIR)
+	rm -f $(TEST_NAME)
+
 include $(THEOS_MAKE_PATH)/aggregate.mk
 
+# Proper rootless staging
+internal-stage::
+	$(ECHO_NOTHING)mkdir -p $(THEOS_STAGING_DIR)/var/jb/Library/{MobileSubstrate/DynamicLibraries,PreferenceBundles/FPSIndicator.bundle,PreferenceLoader/Preferences}$(ECHO_END)
+	$(ECHO_NOTHING)cp FPSIndicator.plist $(THEOS_STAGING_DIR)$(FPSIndicator_INSTALL_PATH)/$(ECHO_END)
+
+# Modern respring approach
 after-install::
-	install.exec "killall -9 fatego" || true
-	install.exec "killall -9 Preferences" || true
+	install.exec "uicache -p /Applications/Preferences.app && killall -9 SpringBoard"

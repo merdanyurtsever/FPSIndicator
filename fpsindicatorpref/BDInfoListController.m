@@ -109,39 +109,64 @@
     return _specifiers;
 }
 
-- (void)open_bilibili{
-    if ([UIApp canOpenURL:[NSURL URLWithString:@"bilibili://space/22182611"]]) {
-        [UIApp openURL:[NSURL URLWithString:@"bilibili://space/22182611"]];
-    } else {
-        [UIApp openURL:[NSURL URLWithString:@"https://space.bilibili.com/22182611"]];
+- (void)open_bilibili {
+    if (@available(iOS 10.0, *)) {
+        [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"bilibili://space/22182611"]
+                                         options:@{}
+                               completionHandler:nil];
     }
 }
-- (void)open_github{
-    [UIApp openURL:[NSURL URLWithString:@"https://github.com/brendonjkding/FPSIndicator"]];
-}
-- (void)open_alipay{
-    [UIApp openURL:[NSURL URLWithString:@"https://qr.alipay.com/fkx199226yyspdubbiibddc"]];
-}
-- (void)open_paypal{
-    [UIApp openURL:[NSURL URLWithString:@"https://paypal.me/brend0n"]];
-}
-- (void)open_cydia{
-  if ([UIApp canOpenURL:[NSURL URLWithString:@"twitter://user?screen_name=brendonjkding"]]){
-    [UIApp openURL:[NSURL URLWithString:@"cydia://url/https://cydia.saurik.com/api/share#?source=http://brendonjkding.github.io"]];
-  }
-  else{
-    [UIApp openURL:[NSURL URLWithString:@"sileo://source/https://brendonjkding.github.io"]];
-  }
-}
-- (void)open_twitter{
-    if ([UIApp canOpenURL:[NSURL URLWithString:@"twitter://user?screen_name=brendonjkding"]]) {
-        [UIApp openURL:[NSURL URLWithString:@"twitter://user?screen_name=brendonjkding"]];
+
+- (void)open_github {
+    if (@available(iOS 10.0, *)) {
+        [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://github.com/brendonjkding/FPSIndicator"]
+                                         options:@{}
+                               completionHandler:nil];
     }
-    else if ([UIApp canOpenURL:[NSURL URLWithString:@"tweetbot:///user_profile/brendonjkding"]]) {
-        [UIApp openURL:[NSURL URLWithString:@"tweetbot:///user_profile/brendonjkding"]];
+}
+
+- (void)open_alipay {
+    if (@available(iOS 10.0, *)) {
+        [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://qr.alipay.com/fkx199226yyspdubbiibddc"]
+                                         options:@{}
+                               completionHandler:nil];
     }
-    else {
-        [UIApp openURL:[NSURL URLWithString:@"https://mobile.twitter.com/brendonjkding"]];
+}
+
+- (void)open_paypal {
+    if (@available(iOS 10.0, *)) {
+        [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://paypal.me/brend0n"]
+                                         options:@{}
+                               completionHandler:nil];
+    }
+}
+
+- (void)open_cydia {
+    NSURL *sileoURL = [NSURL URLWithString:@"sileo://source/https://brendonjkding.github.io"];
+    if (@available(iOS 10.0, *)) {
+        [UIApplication.sharedApplication openURL:sileoURL options:@{} completionHandler:^(BOOL success) {
+            if (!success) {
+                NSURL *cydiaURL = [NSURL URLWithString:@"cydia://url/https://cydia.saurik.com/api/share#?source=http://brendonjkding.github.io"];
+                [UIApplication.sharedApplication openURL:cydiaURL options:@{} completionHandler:nil];
+            }
+        }];
+    }
+}
+
+- (void)open_twitter {
+    NSArray *urlSchemes = @[
+        @"twitter://user?screen_name=brendonjkding",
+        @"tweetbot:///user_profile/brendonjkding",
+        @"https://mobile.twitter.com/brendonjkding"
+    ];
+    
+    if (@available(iOS 10.0, *)) {
+        for (NSString *urlScheme in urlSchemes) {
+            NSURL *url = [NSURL URLWithString:urlScheme];
+            [UIApplication.sharedApplication openURL:url options:@{} completionHandler:^(BOOL success) {
+                if (success) return;
+            }];
+        }
     }
 }
 

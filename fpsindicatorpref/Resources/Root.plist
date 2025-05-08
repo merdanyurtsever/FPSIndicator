@@ -16,13 +16,13 @@
 			<key>default</key>
 			<true/>
 			<key>defaults</key>
-			<string>com.brend0n.fpsindicator</string>
+			<string>com.fpsindicator</string>
 			<key>key</key>
 			<string>enabled</string>
 			<key>label</key>
 			<string>ENABLED</string>
 			<key>PostNotification</key>
-			<string>com.brend0n.fpsindicator/loadPref</string>
+			<string>com.fpsindicator/loadPref</string>
 		</dict>
 
 		<dict>
@@ -33,49 +33,11 @@
 		</dict>
 		<dict>
 			<key>cell</key>
-			<string>PSLinkListCell</string>
-			<key>defaults</key>
-			<string>com.brend0n.fpsindicator</string>
-			<key>label</key>
-			<string>CHOOSE_ENABLED_APP</string>
-			<key>detail</key>
-			<string>ATLApplicationListMultiSelectionController</string>
-			<key>key</key>
-			<string>apps</string>
-			<key>sections</key>
-			<array>
-				<dict>
-					<key>sectionType</key>
-					<string>Visible</string>
-				</dict>
-			</array>
-			<key>showIdentifiersAsSubtitle</key>
-			<true/>
-			<key>defaultApplicationSwitchValue</key>
-			<false/>
-			<key>useSearchBar</key>
-			<true/>
-			<key>includeIdentifiersInSearch</key>
-			<true/>
-			<key>PostNotification</key>
-			<string>com.brend0n.fpsindicator/loadPref</string>
-		</dict>
-
-		<dict>
-			<key>cell</key>
-			<string>PSGroupCell</string>
-			<key>footerText</key>
-			<string></string>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSLinkListCell</string>
+				<string>PSSegmentCell</string>
 			<key>default</key>
 			<integer>1</integer>
 			<key>defaults</key>
-			<string>com.brend0n.fpsindicator</string>
-			<key>detail</key>
-			<string>PSListItemsController</string>
+			<string>com.fpsindicator</string>
 			<key>key</key>
 			<string>fpsMode</string>
 			<key>label</key>
@@ -91,7 +53,7 @@
 				<integer>2</integer>
 			</array>
 			<key>PostNotification</key>
-			<string>com.brend0n.fpsindicator/loadPref</string>
+			<string>com.fpsindicator/loadPref</string>
 		</dict>
 		
 		<dict>
@@ -105,28 +67,65 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
-			<string></string>
+			<string>APPEARANCE</string>
 		</dict>
 		<dict>
 			<key>cell</key>
-			<string>PSLinkCell</string>
-			<key>cellClass</key>
-			<string>PFSimpleLiteColorCell</string>
-			<key>libcolorpicker</key>
-			<dict>
-				<key>defaults</key>
-				<string>com.brend0n.fpsindicator</string>
-				<key>key</key>
-				<string>color</string>
-				<key>fallback</key>
-				<string>#ffff00</string>
-				<key>alpha</key>
-				<true/>
-				<key>PostNotification</key>
-				<string>com.brend0n.fpsindicator/loadPref</string>
-			</dict>
+			<string>PSSliderCell</string>
+			<key>default</key>
+			<real>1.0</real>
+			<key>defaults</key>
+			<string>com.fpsindicator</string>
+			<key>key</key>
+			<string>opacity</string>
+			<key>min</key>
+			<real>0.1</real>
+			<key>max</key>
+			<real>1.0</real>
+			<key>showValue</key>
+			<true/>
 			<key>label</key>
-			<string>TEXT_COLOR</string>
+			<string>OPACITY</string>
+			<key>PostNotification</key>
+			<string>com.fpsindicator/loadPref</string>
+			<key>isSegmented</key>
+			<true/>
+			<key>segmentCount</key>
+			<integer>10</integer>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSLinkListCell</string>
+			<key>default</key>
+			<string>system</string>
+			<key>defaults</key>
+			<string>com.fpsindicator</string>
+			<key>key</key>
+			<string>appearance</string>
+			<key>label</key>
+			<string>THEME</string>
+			<key>validTitles</key>
+			<array>
+				<string>System</string>
+				<string>Light</string>
+				<string>Dark</string>
+			</array>
+			<key>validValues</key>
+			<array>
+				<string>system</string>
+				<string>light</string>
+				<string>dark</string>
+			</array>
+			<key>PostNotification</key>
+			<string>com.fpsindicator/loadPref</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>label</key>
+			<string>RESET_POSITION</string>
+			<key>action</key>
+			<string>resetPosition</string>
 		</dict>
 	</array>
 	<key>title</key>

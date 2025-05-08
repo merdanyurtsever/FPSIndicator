@@ -21,4 +21,8 @@ PFPS - Pushed Frames Per Second (u8), it counts how many frames were actually pu
 "FPS"="FPS";
 "PFPS"="PFPS";
 
+"APPEARANCE"="Appearance";
+"OPACITY"="Opacity";
+"RESET_POSITION"="Reset Position";
+
 "TEXT_COLOR"="Text Color";

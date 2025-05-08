@@ -2,8 +2,12 @@
 #define likely(E) __builtin_expect(!!(E),1)
 #define unlikely(E) __builtin_expect(!!(E),0)
 
-#define kPrefPath @THEOS_PACKAGE_INSTALL_PREFIX"/var/mobile/Library/Preferences/com.brend0n.fpsindicator.plist"
-#define kBundlePath @THEOS_PACKAGE_INSTALL_PREFIX"/Library/PreferenceBundles/FPSIndicator.bundle"
+// Rootless compatibility definitions
+#define ROOTLESS_PREFIX "/var/jb"
+#define ROOTLESS_ROOT_PATH(path) ([@ROOTLESS_PREFIX stringByAppendingString:path])
+
+#define kPrefPath ROOTLESS_ROOT_PATH(@"/var/mobile/Library/Preferences/com.fpsindicator.plist")
+#define kBundlePath ROOTLESS_ROOT_PATH(@"/Library/PreferenceBundles/FPSIndicator.bundle")
 
 #define FPSNSLocalizedString(key) NSLocalizedStringFromTableInBundle((key),@"Root",[NSBundle bundleWithPath:kBundlePath],nil)
 

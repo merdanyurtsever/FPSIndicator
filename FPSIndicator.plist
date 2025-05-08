@@ -1,1 +1,17 @@
-{ Filter = { Bundles = ( "com.apple.UIKit" ); }; }
+{
+    Filter = {
+        Bundles = (
+            "com.apple.UIKit",
+            "com.apple.Metal",
+            "com.apple.QuartzCore",
+            "com.tencent.ig",
+            "com.pubg.krmobile",
+            "com.tencent.tmgp.pubgmhd"
+        );
+        Executables = (
+            "SpringBoard",
+            "backboardd"
+        );
+        Mode = "Any";
+    };
+}
