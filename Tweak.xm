@@ -422,8 +422,21 @@ static void setupFPSWindow(void) {
         }
         
         fpsWindow.frame = [[UIScreen mainScreen] bounds];
-        // No need to duplicate initialization code as it's already handled in commonInit
-        [fpsWindow makeKeyAndVisible];
+        
+        // For PUBG Mobile games, use a much higher window level and make sure it's visible
+        if (isPUBGProcess()) {
+            NSLog(@"FPSIndicator: Setting up for PUBG Mobile");
+            fpsWindow.windowLevel = UIWindowLevelStatusBar + 10000; // Much higher level for PUBG
+            fpsWindow.backgroundColor = [UIColor clearColor];
+            fpsWindow.userInteractionEnabled = YES;
+            fpsWindow.hidden = NO;
+            // Force the window to be key and visible with a slight delay to ensure it appears
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                [fpsWindow makeKeyAndVisible];
+            });
+        } else {
+            [fpsWindow makeKeyAndVisible];
+        }
     }
 }
 
@@ -574,6 +587,43 @@ void frameTick(){
 %end
 %end//metal
 
+#pragma mark pubg_specific
+%group pubg
+// Hook additional OpenGL/Metal methods specific to PUBG
+%hook EAGLContext
++ (BOOL)setCurrentContext:(EAGLContext *)context {
+    BOOL result = %orig;
+    if (result && context != nil) {
+        frameTick();
+    }
+    return result;
+}
+
+- (void)presentRenderbuffer:(NSUInteger)target {
+    %orig;
+    frameTick();
+}
+%end
+
+// Additional PUBG-specific hooks for Unreal Engine
+%hook FPlatformMisc
++ (void)LowLevelOutputDebugString:(NSString *)message {
+    %orig;
+    if ([message containsString:@"Frame"]) {
+        frameTick();
+    }
+}
+%end
+
+// Hook PUBG's custom renderer if it exists
+%hook PUBGGLESRenderer
+- (void)presentFrame {
+    %orig;
+    frameTick();
+}
+%end
+%end //pubg
+
 // Add UIWindowScene support for Stage Manager
 %group scenes
 %hook UIWindowScene
@@ -623,11 +673,19 @@ void frameTick(){
             sceneToWindowMap = [NSMapTable weakToWeakObjectsMapTable];
         });
         
+        // Check if this is a PUBG process
+        BOOL isPUBG = isPUBGProcess();
+        if (isPUBG) {
+            NSLog(@"FPSIndicator: Running in PUBG Mobile - initializing PUBG-specific hooks");
+        }
+        
         // Load preferences first before any UI work
         loadPref();
         
-        // Initialize window on main thread with delay to ensure proper UIKit initialization
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        // Initialize window on main thread with delay
+        // Use different delays for PUBG vs other apps
+        NSTimeInterval delay = isPUBG ? 2.0 : 0.5; // Longer delay for PUBG to ensure proper initialization
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
             setupFPSWindow();
             startRefreshTimer();
             
@@ -647,5 +705,10 @@ void frameTick(){
         }
         %init(ui);
         %init(metal);
+        
+        // Initialize PUBG-specific hooks only in PUBG processes
+        if (isPUBG) {
+            %init(pubg);
+        }
     }
 }
