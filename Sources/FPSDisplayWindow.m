@@ -1,5 +1,7 @@
 #import "FPSDisplayWindow.h"
 #import "FPSCalculator.h"
+#import "FPSGraphView.h"
+#import "FPSThermalMonitor.h"
 
 // Constants
 #define kFPSLabelWidth 65
@@ -76,6 +78,19 @@ static NSArray *kPrivacyModeApps;
         self.backgroundColor = [UIColor clearColor];
         self.hidden = NO;
         
+        // Initialize color coding properties with default values
+        _colorCodingEnabled = YES;
+        _goodFPSThreshold = 50.0;
+        _mediumFPSThreshold = 30.0;
+        _goodFPSColor = [UIColor greenColor];
+        _mediumFPSColor = [UIColor yellowColor];
+        _poorFPSColor = [UIColor redColor];
+        
+        // Initialize display mode to normal
+        _displayMode = FPSDisplayModeNormal;
+        _graphEnabled = YES;
+        _thermalMonitoringEnabled = NO; // Default to off
+        
         // Check for privacy mode
         NSString *currentBundleID = [[NSBundle mainBundle] bundleIdentifier];
         _isInPrivacyMode = [self shouldActivatePrivacyModeForApp:currentBundleID];
@@ -99,6 +114,32 @@ static NSArray *kPrivacyModeApps;
             label.textColor = [UIColor yellowColor];
         }
         
+        // Create and configure the temperature label
+        UILabel *tempLabel = [[UILabel alloc] init];
+        tempLabel.font = [UIFont systemFontOfSize:10];
+        tempLabel.textAlignment = NSTextAlignmentCenter;
+        tempLabel.layer.cornerRadius = 5;
+        tempLabel.layer.masksToBounds = YES;
+        tempLabel.backgroundColor = label.backgroundColor;
+        tempLabel.textColor = label.textColor;
+        tempLabel.alpha = 0.0; // Start hidden
+        tempLabel.translatesAutoresizingMaskIntoConstraints = NO;
+        [self addSubview:tempLabel];
+        self.temperatureLabel = tempLabel;
+        
+        // Create and configure the graph view
+        FPSGraphView *graphView = [[FPSGraphView alloc] initWithFrame:CGRectMake(0, 0, 160, 80)];
+        graphView.translatesAutoresizingMaskIntoConstraints = NO;
+        graphView.alpha = 0.0; // Start hidden
+        graphView.layer.cornerRadius = 5;
+        [self addSubview:graphView];
+        self.graphView = graphView;
+        
+        // Setup graph view gesture recognizers
+        UITapGestureRecognizer *graphTap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleGraphViewTap:)];
+        [graphView addGestureRecognizer:graphTap];
+        graphView.userInteractionEnabled = YES;
+        
         // Use Auto Layout for better positioning
         label.translatesAutoresizingMaskIntoConstraints = NO;
         [self addSubview:label];
@@ -112,9 +153,40 @@ static NSArray *kPrivacyModeApps;
             [label.trailingAnchor constraintEqualToAnchor:self.trailingAnchor constant:-5]
         ]];
         
+        // Graph view constraints - anchored to FPS label
+        [NSLayoutConstraint activateConstraints:@[
+            [graphView.widthAnchor constraintEqualToConstant:160],
+            [graphView.heightAnchor constraintEqualToConstant:80],
+            [graphView.topAnchor constraintEqualToAnchor:label.bottomAnchor constant:5],
+            [graphView.trailingAnchor constraintEqualToAnchor:label.trailingAnchor]
+        ]];
+        
+        // Temperature label constraints - anchored below FPS label
+        [NSLayoutConstraint activateConstraints:@[
+            [tempLabel.widthAnchor constraintEqualToConstant:120],
+            [tempLabel.heightAnchor constraintEqualToConstant:20],
+            [tempLabel.topAnchor constraintEqualToAnchor:label.bottomAnchor constant:5],
+            [tempLabel.trailingAnchor constraintEqualToAnchor:label.trailingAnchor]
+        ]];
+        
         // Add pan gesture for repositioning
         UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handleFPSLabelPan:)];
         [label addGestureRecognizer:pan];
+        
+        // Add double tap gesture for cycling display modes
+        UITapGestureRecognizer *doubleTap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleFPSLabelDoubleTap:)];
+        doubleTap.numberOfTapsRequired = 2;
+        [label addGestureRecognizer:doubleTap];
+        
+        // Add long press gesture for toggling thermal monitoring
+        UILongPressGestureRecognizer *longPress = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleFPSLabelLongPress:)];
+        longPress.minimumPressDuration = 1.0; // 1 second long press
+        [label addGestureRecognizer:longPress];
+        
+        // Make sure single tap doesn't interfere with double tap
+        [pan requireGestureRecognizerToFail:doubleTap];
+        [doubleTap requireGestureRecognizerToFail:longPress];
+        
         label.userInteractionEnabled = YES;
         
         // Load saved position from preferences
@@ -140,6 +212,12 @@ static NSArray *kPrivacyModeApps;
                                                       object:nil];
         }
         
+        // Register for thermal data updates
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                               selector:@selector(thermalDataDidUpdate:)
+                                                   name:@"FPSThermalDataUpdatedNotification"
+                                                 object:nil];
+        
         // Apply appearance from saved preferences
         [self loadAppearanceFromPreferences];
         
@@ -156,20 +234,56 @@ static NSArray *kPrivacyModeApps;
 - (void)updateWithFPS:(double)fps {
     if (!self.fpsLabel || self.hidden || _isInPrivacyMode) return;
     
-    // Format FPS with different colors based on performance thresholds
-    NSString *fpsText = [NSString stringWithFormat:@"%.1f", fps];
+    // Calculate frame time in milliseconds (1000ms / fps)
+    double frameTime = (fps > 0) ? (1000.0 / fps) : 0;
+    
+    // Update graph with the current frame time
+    if (self.graphView && self.graphEnabled) {
+        [self.graphView addFrameTime:frameTime];
+    }
+    
+    // Format FPS based on display mode
+    NSString *fpsText;
+    switch (self.displayMode) {
+        case FPSDisplayModeNormal:
+            fpsText = [NSString stringWithFormat:@"%.1f FPS", fps];
+            break;
+        case FPSDisplayModeCompact:
+            fpsText = [NSString stringWithFormat:@"%.1f", fps];
+            break;
+        case FPSDisplayModeDot:
+            fpsText = @"●"; // Unicode dot character
+            break;
+        case FPSDisplayModeGraph:
+            // In graph mode, show frame time instead of FPS
+            fpsText = [NSString stringWithFormat:@"%.1f ms", frameTime];
+            break;
+    }
     
     // Update the UI on the main thread
     dispatch_async(dispatch_get_main_queue(), ^{
         self.fpsLabel.text = fpsText;
         
-        // Color-code based on performance
-        if (fps >= 50) {
-            self.fpsLabel.textColor = [UIColor greenColor];
-        } else if (fps >= 30) {
-            self.fpsLabel.textColor = [UIColor yellowColor];
+        // Apply color coding if enabled
+        if (self.colorCodingEnabled) {
+            if (fps >= self.goodFPSThreshold) {
+                self.fpsLabel.textColor = self.goodFPSColor;
+            } else if (fps >= self.mediumFPSThreshold) {
+                self.fpsLabel.textColor = self.mediumFPSColor;
+            } else {
+                self.fpsLabel.textColor = self.poorFPSColor;
+            }
+        }
+        
+        // Adjust label size based on display mode
+        if (self.displayMode == FPSDisplayModeDot) {
+            self.fpsLabel.font = [UIFont systemFontOfSize:20 weight:UIFontWeightBold];
+            // Create more circular appearance for dot mode
+            self.fpsLabel.layer.cornerRadius = self.fpsLabel.bounds.size.height / 2;
         } else {
-            self.fpsLabel.textColor = [UIColor redColor];
+            // Use regular font for text modes
+            self.fpsLabel.font = [UIFont monospacedDigitSystemFontOfSize:self.fontSize weight:UIFontWeightBold];
+            self.fpsLabel.layer.cornerRadius = 5;
         }
     });
 }
@@ -327,6 +441,35 @@ static NSArray *kPrivacyModeApps;
     NSMutableDictionary *prefs = [[NSMutableDictionary alloc] initWithContentsOfFile:kPrefPath];
     if (!prefs) return;
     
+    // Load display mode
+    if (prefs[@"displayMode"]) {
+        self.displayMode = [prefs[@"displayMode"] integerValue];
+        if (self.displayMode == FPSDisplayModeGraph && self.graphEnabled) {
+            [self showGraphView];
+        }
+    }
+    
+    // Load thermal monitoring preference
+    if (prefs[@"thermalMonitoringEnabled"]) {
+        self.thermalMonitoringEnabled = [prefs[@"thermalMonitoringEnabled"] boolValue];
+        if (self.thermalMonitoringEnabled) {
+            [[FPSThermalMonitor sharedInstance] startMonitoring];
+        }
+    }
+    
+    // Load color coding preferences
+    if (prefs[@"colorCodingEnabled"]) {
+        self.colorCodingEnabled = [prefs[@"colorCodingEnabled"] boolValue];
+    }
+    
+    if (prefs[@"goodFPSThreshold"]) {
+        self.goodFPSThreshold = [prefs[@"goodFPSThreshold"] doubleValue];
+    }
+    
+    if (prefs[@"mediumFPSThreshold"]) {
+        self.mediumFPSThreshold = [prefs[@"mediumFPSThreshold"] doubleValue];
+    }
+    
     [self updateAppearanceWithPreferences:prefs];
 }
 
@@ -401,6 +544,165 @@ static NSArray *kPrivacyModeApps;
     }
 }
 
+- (void)handleFPSLabelDoubleTap:(UITapGestureRecognizer *)doubleTap {
+    if (doubleTap.state == UIGestureRecognizerStateRecognized) {
+        // Cycle through display modes
+        switch (self.displayMode) {
+            case FPSDisplayModeNormal:
+                self.displayMode = FPSDisplayModeCompact;
+                break;
+            case FPSDisplayModeCompact:
+                self.displayMode = FPSDisplayModeDot;
+                break;
+            case FPSDisplayModeDot:
+                if (self.graphEnabled) {
+                    self.displayMode = FPSDisplayModeGraph;
+                    // Show graph view with animation
+                    [self showGraphView];
+                } else {
+                    self.displayMode = FPSDisplayModeNormal;
+                }
+                break;
+            case FPSDisplayModeGraph:
+                self.displayMode = FPSDisplayModeNormal;
+                // Hide graph view with animation
+                [self hideGraphView];
+                break;
+        }
+        
+        // Save display mode to preferences
+        [self saveDisplayModeToPreferences];
+        
+        // Display a brief feedback toast
+        NSString *modeName;
+        switch (self.displayMode) {
+            case FPSDisplayModeNormal:
+                modeName = @"Normal Mode";
+                break;
+            case FPSDisplayModeCompact:
+                modeName = @"Compact Mode";
+                break;
+            case FPSDisplayModeDot:
+                modeName = @"Dot Mode";
+                break;
+            case FPSDisplayModeGraph:
+                modeName = @"Graph Mode";
+                break;
+        }
+        
+        [self showToast:modeName];
+    }
+}
+
+- (void)handleGraphViewTap:(UITapGestureRecognizer *)tap {
+    if (tap.state == UIGestureRecognizerStateRecognized) {
+        // Exit graph mode on tap
+        self.displayMode = FPSDisplayModeNormal;
+        [self hideGraphView];
+        [self saveDisplayModeToPreferences];
+        [self showToast:@"Normal Mode"];
+    }
+}
+
+- (void)handleFPSLabelLongPress:(UILongPressGestureRecognizer *)longPress {
+    if (longPress.state == UIGestureRecognizerStateBegan) {
+        // Toggle thermal monitoring
+        self.thermalMonitoringEnabled = !self.thermalMonitoringEnabled;
+        
+        if (self.thermalMonitoringEnabled) {
+            [self showToast:@"Thermal Monitoring Enabled"];
+            // Start monitoring
+            [[FPSThermalMonitor sharedInstance] startMonitoring];
+        } else {
+            [self showToast:@"Thermal Monitoring Disabled"];
+            // Stop monitoring
+            [[FPSThermalMonitor sharedInstance] stopMonitoring];
+            // Hide temperature label with animation
+            [UIView animateWithDuration:0.3 animations:^{
+                self.temperatureLabel.alpha = 0.0;
+            }];
+        }
+        
+        // Save thermal monitoring preference
+        [self saveThermalMonitoringPreference];
+    }
+}
+
+- (void)showGraphView {
+    if (!self.graphView) return;
+    
+    // Start animation to show the graph
+    [UIView animateWithDuration:0.3 animations:^{
+        self.graphView.alpha = 1.0;
+    }];
+}
+
+- (void)hideGraphView {
+    if (!self.graphView) return;
+    
+    // Start animation to hide the graph
+    [UIView animateWithDuration:0.3 animations:^{
+        self.graphView.alpha = 0.0;
+    }];
+}
+
+- (void)saveDisplayModeToPreferences {
+    NSMutableDictionary *prefs = [[NSMutableDictionary alloc] initWithContentsOfFile:kPrefPath];
+    if (!prefs) prefs = [NSMutableDictionary dictionary];
+    
+    // Save display mode setting
+    prefs[@"displayMode"] = @(self.displayMode);
+    
+    [prefs writeToFile:kPrefPath atomically:YES];
+}
+
+- (void)saveThermalMonitoringPreference {
+    NSMutableDictionary *prefs = [[NSMutableDictionary alloc] initWithContentsOfFile:kPrefPath];
+    if (!prefs) prefs = [NSMutableDictionary dictionary];
+    
+    // Save thermal monitoring setting
+    prefs[@"thermalMonitoringEnabled"] = @(self.thermalMonitoringEnabled);
+    
+    [prefs writeToFile:kPrefPath atomically:YES];
+}
+
+- (void)showToast:(NSString *)message {
+    // Create a simple toast view
+    UILabel *toastLabel = [[UILabel alloc] init];
+    toastLabel.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.7];
+    toastLabel.textColor = [UIColor whiteColor];
+    toastLabel.textAlignment = NSTextAlignmentCenter;
+    toastLabel.font = [UIFont systemFontOfSize:12];
+    toastLabel.text = message;
+    toastLabel.alpha = 0.0;
+    toastLabel.layer.cornerRadius = 10;
+    toastLabel.clipsToBounds = YES;
+    
+    // Add to window
+    [self addSubview:toastLabel];
+    
+    // Setup constraints
+    toastLabel.translatesAutoresizingMaskIntoConstraints = NO;
+    [NSLayoutConstraint activateConstraints:@[
+        [toastLabel.centerXAnchor constraintEqualToAnchor:self.centerXAnchor],
+        [toastLabel.bottomAnchor constraintEqualToAnchor:self.fpsLabel.topAnchor constant:-10],
+        [toastLabel.widthAnchor constraintGreaterThanOrEqualToConstant:100],
+        [toastLabel.heightAnchor constraintEqualToConstant:30]
+    ]];
+    
+    // Animate in
+    [UIView animateWithDuration:0.3 animations:^{
+        toastLabel.alpha = 1.0;
+    } completion:^(BOOL finished) {
+        // Animate out after delay
+        [UIView animateWithDuration:0.3 delay:1.0 options:0 animations:^{
+            toastLabel.alpha = 0.0;
+        } completion:^(BOOL finished) {
+            [toastLabel removeFromSuperview];
+        }];
+    }];
+}
+
 #pragma mark - Notifications
 
 - (void)orientationDidChange:(NSNotification *)notification {
@@ -432,6 +734,35 @@ static NSArray *kPrivacyModeApps;
             [self updateFrameForCurrentOrientation];
         }
     }
+}
+
+- (void)thermalDataDidUpdate:(NSNotification *)notification {
+    if (!self.thermalMonitoringEnabled) return;
+    
+    FPSThermalMonitor *monitor = [FPSThermalMonitor sharedInstance];
+    
+    // Update temperature label on the main thread
+    dispatch_async(dispatch_get_main_queue(), ^{
+        // Show both CPU and GPU temperatures
+        self.temperatureLabel.text = monitor.temperatureString;
+        
+        // Use thermal state color
+        self.temperatureLabel.textColor = [monitor thermalStateColor];
+        
+        // Show the temperature label with animation if it's hidden
+        if (self.temperatureLabel.alpha < 1.0) {
+            [UIView animateWithDuration:0.3 animations:^{
+                self.temperatureLabel.alpha = 1.0;
+            }];
+        }
+        
+        // If in graph mode, adjust graph position to accommodate temperature label
+        if (self.displayMode == FPSDisplayModeGraph && self.graphView.alpha > 0) {
+            [NSLayoutConstraint activateConstraints:@[
+                [self.graphView.topAnchor constraintEqualToAnchor:self.temperatureLabel.bottomAnchor constant:5]
+            ]];
+        }
+    });
 }
 
 @end

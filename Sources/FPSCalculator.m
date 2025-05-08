@@ -31,6 +31,7 @@
         _mode = FPSModeAverage;
         _averageFPS = 0.0;
         _perSecondFPS = 0.0;
+        _samplingRate = 1.0; // Default to sampling every frame
         [self reset];
         
         // Register for power mode notifications
@@ -52,6 +53,19 @@
 #pragma mark - Public Methods
 
 - (void)frameTick {
+    // Apply sampling rate optimization (skip frames based on sampling rate)
+    static int frameCounter = 0;
+    frameCounter++;
+    
+    // If sampling rate is less than 1.0, only process some frames
+    // For example, if sampling rate is 0.5, process every other frame
+    if (_samplingRate < 1.0) {
+        int frameInterval = (int)(1.0 / _samplingRate);
+        if (frameCounter % frameInterval != 0) {
+            return; // Skip this frame
+        }
+    }
+    
     // Ensure all frame rate calculations happen on a dedicated queue
     dispatch_async(_fpsQueue, ^{
         // First frame initialization

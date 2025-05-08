@@ -16,6 +16,9 @@ typedef NS_ENUM(NSInteger, GameEngineType) {
     GameEngineTypeUnity,
     GameEngineTypeUnreal,
     GameEngineTypePUBG,
+    GameEngineTypeCocos2D,
+    GameEngineTypeGodot,
+    GameEngineTypeGameMaker,
     GameEngineTypeCustom
 };
 
@@ -43,6 +46,21 @@ typedef NS_ENUM(NSInteger, GameEngineType) {
  * @property isUnrealApp Whether the current app uses Unreal engine
  */
 @property (nonatomic, readonly) BOOL isUnrealApp;
+
+/**
+ * @property isCocos2DApp Whether the current app uses Cocos2D engine
+ */
+@property (nonatomic, readonly) BOOL isCocos2DApp;
+
+/**
+ * @property isGodotApp Whether the current app uses Godot engine
+ */
+@property (nonatomic, readonly) BOOL isGodotApp;
+
+/**
+ * @property isGameMakerApp Whether the current app uses GameMaker engine
+ */
+@property (nonatomic, readonly) BOOL isGameMakerApp;
 
 /**
  * Shared instance accessor

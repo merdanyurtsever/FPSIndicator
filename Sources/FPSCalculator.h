@@ -43,6 +43,12 @@ typedef NS_ENUM(NSInteger, FPSMode) {
 @property (nonatomic, readonly) NSTimeInterval fpsUpdateInterval;
 
 /**
+ * @property samplingRate The rate at which frames are sampled (1.0 = every frame, 0.5 = every other frame)
+ * Lower values improve battery life at the cost of slightly less accurate measurements
+ */
+@property (nonatomic, assign) double samplingRate;
+
+/**
  * Shared instance accessor
  * @return The shared FPSCalculator instance
  */

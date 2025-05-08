@@ -1,5 +1,7 @@
 #import <UIKit/UIKit.h>
 
+@class FPSGraphView;
+
 /**
  * FPSDisplayWindow - Manages the floating FPS indicator window
  * 
@@ -44,6 +46,67 @@ typedef NS_ENUM(NSInteger, PositionPreset) {
     PositionPresetCustom
 };
 @property (nonatomic, assign) PositionPreset positionPreset;
+
+/**
+ * @property colorCodingEnabled Whether to enable color coding based on FPS thresholds
+ */
+@property (nonatomic, assign) BOOL colorCodingEnabled;
+
+/**
+ * @property goodFPSThreshold FPS above this value is considered "good" (green color)
+ */
+@property (nonatomic, assign) double goodFPSThreshold;
+
+/**
+ * @property mediumFPSThreshold FPS above this value is considered "medium" (yellow color)
+ */
+@property (nonatomic, assign) double mediumFPSThreshold;
+
+/**
+ * @property goodFPSColor Color used when FPS is above goodFPSThreshold
+ */
+@property (nonatomic, strong) UIColor *goodFPSColor;
+
+/**
+ * @property mediumFPSColor Color used when FPS is between mediumFPSThreshold and goodFPSThreshold
+ */
+@property (nonatomic, strong) UIColor *mediumFPSColor;
+
+/**
+ * @property poorFPSColor Color used when FPS is below mediumFPSThreshold
+ */
+@property (nonatomic, strong) UIColor *poorFPSColor;
+
+/**
+ * @property displayMode The display mode for the FPS indicator
+ */
+typedef NS_ENUM(NSInteger, FPSDisplayMode) {
+    FPSDisplayModeNormal = 0,  // Shows FPS with text (e.g., "60.0 FPS")
+    FPSDisplayModeCompact,     // Shows only the number (e.g., "60.0")
+    FPSDisplayModeDot,         // Shows just a color-coded dot
+    FPSDisplayModeGraph        // Shows frame time graph
+};
+@property (nonatomic, assign) FPSDisplayMode displayMode;
+
+/**
+ * @property graphView The graph view showing frame time history
+ */
+@property (nonatomic, strong) FPSGraphView *graphView;
+
+/**
+ * @property graphEnabled Whether the frame time graph is enabled
+ */
+@property (nonatomic, assign) BOOL graphEnabled;
+
+/**
+ * @property thermalMonitoringEnabled Whether to display thermal information
+ */
+@property (nonatomic, assign) BOOL thermalMonitoringEnabled;
+
+/**
+ * @property temperatureLabel The label that displays temperature information
+ */
+@property (nonatomic, strong) UILabel *temperatureLabel;
 
 /**
  * Shared instance accessor
