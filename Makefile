@@ -9,7 +9,7 @@ include $(THEOS)/makefiles/common.mk
 TWEAK_NAME = FPSIndicator
 
 # Updated to include new modular source files
-FPSIndicator_FILES = Tweak.xm Sources/FPSCalculator.m Sources/FPSDisplayWindow.m Sources/FPSGameSupport.m Sources/FPSGraphView.m Sources/FPSThermalMonitor.m
+FPSIndicator_FILES = Tweak.xm Sources/FPSCalculator.m Sources/FPSDisplayWindow.m Sources/FPSGameSupport.m Sources/FPSGraphView.m Sources/FPSThermalMonitor.m Sources/FPSAlternativeOverlay.m
 FPSIndicator_CFLAGS = -fobjc-arc -include Prefix.pch
 FPSIndicator_FRAMEWORKS = UIKit Metal MetalKit
 FPSIndicator_LIBRARIES = substrate

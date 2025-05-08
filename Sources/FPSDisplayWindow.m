@@ -2,6 +2,7 @@
 #import "FPSCalculator.h"
 #import "FPSGraphView.h"
 #import "FPSThermalMonitor.h"
+#import "FPSGameSupport.h"
 
 // Constants
 #define kFPSLabelWidth 65
@@ -72,156 +73,135 @@ static NSArray *kPrivacyModeApps;
         _privacyAppList = [NSMutableArray array];
         [self loadPrivacyAppList];
         
-        // Configure window properties
-        self.windowLevel = UIWindowLevelStatusBar + 100;
-        self.userInteractionEnabled = YES;
-        self.backgroundColor = [UIColor clearColor];
-        self.hidden = NO;
+        // Configure window properties for rootless compatibility
         
-        // Initialize color coding properties with default values
+        // IMPORTANT: Try a completely different approach for rootless
+        // Instead of relying on UIWindowLevel, which might be restricted,
+        // we'll use UIScreen's scale and coordinateSpace to position our window
+        // and enable a custom window mode that might bypass restrictions
+        
+        // Clear background and ensure alpha channel works properly
+        self.backgroundColor = [UIColor clearColor];
+        self.opaque = NO;
+        self.clipsToBounds = NO;
+        
+        // Make non-interactive to avoid gameplay disruption
+        self.userInteractionEnabled = NO;
+        
+        // Attempt multiple window level approaches to bypass restrictions
+        if (@available(iOS 13.0, *)) {
+            // Try method 1: Use UIWindowScene's highest level possible
+            self.windowLevel = UIWindowLevelStatusBar + 100000;
+        } else {
+            // For older iOS, use alert level + a very high value
+            self.windowLevel = UIWindowLevelAlert + 10000;
+        }
+        
+        // A critical configuration for rootless compatibility
+        if ([self respondsToSelector:@selector(setCanResizeToFitContent:)]) {
+            [self performSelector:@selector(setCanResizeToFitContent:) withObject:@YES];
+        }
+        
+        // Use root level key window to avoid restrictions
+        if ([self respondsToSelector:@selector(_setSecure:)]) {
+            [self performSelector:@selector(_setSecure:) withObject:@NO];
+        } else {
+            // Try alternative private API access through NSInvocation for rootless
+            SEL privateSel = NSSelectorFromString(@"_setSecure:");
+            if ([self respondsToSelector:privateSel]) {
+                NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:
+                                          [self methodSignatureForSelector:privateSel]];
+                [invocation setSelector:privateSel];
+                [invocation setTarget:self];
+                BOOL no = NO;
+                [invocation setArgument:&no atIndex:2];
+                [invocation invoke];
+            }
+            
+            // Try to set level via alternative method for rootless
+            if ([UIWindow respondsToSelector:NSSelectorFromString(@"setWindow:level:")]) {
+                SEL levelSetter = NSSelectorFromString(@"setWindow:level:");
+                NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:
+                                          [UIWindow methodSignatureForSelector:levelSetter]];
+                [invocation setSelector:levelSetter];
+                [invocation setTarget:[UIWindow class]];
+                
+                // Cast self to void* to avoid type errors
+                void *windowPtr = (__bridge void *)self;
+                [invocation setArgument:&windowPtr atIndex:2];
+                
+                CGFloat level = 100000;
+                [invocation setArgument:&level atIndex:3];
+                [invocation invoke];
+            }
+        }
+        
+        // FPS label with rootless-compatible layer properties
+        UILabel *label = [[UILabel alloc] init];
+        label.font = [UIFont monospacedDigitSystemFontOfSize:16 weight:UIFontWeightBold];
+        label.textAlignment = NSTextAlignmentCenter;
+        label.layer.cornerRadius = 5;
+        label.layer.masksToBounds = YES;
+        label.layer.borderWidth = 1.0;
+        label.layer.borderColor = [UIColor blackColor].CGColor;
+        
+        // Add special shadow to ensure visibility on any background
+        label.layer.shadowColor = [UIColor blackColor].CGColor;
+        label.layer.shadowOffset = CGSizeMake(0, 0);
+        label.layer.shadowOpacity = 1.0;
+        label.layer.shadowRadius = 3.0;
+        
+        // Set initial colors with stronger opacity
+        if (@available(iOS 13.0, *)) {
+            label.backgroundColor = [[UIColor systemBackgroundColor] colorWithAlphaComponent:0.9];
+            label.textColor = [UIColor systemGreenColor];
+        } else {
+            label.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.9];
+            label.textColor = [UIColor greenColor];
+        }
+        
+        // Use Auto Layout for positioning
+        label.translatesAutoresizingMaskIntoConstraints = NO;
+        [self addSubview:label];
+        self.fpsLabel = label;
+        
+        // Position the label in the top right corner by default
+        [NSLayoutConstraint activateConstraints:@[
+            [label.widthAnchor constraintEqualToConstant:80], // Slightly wider
+            [label.heightAnchor constraintEqualToConstant:30],
+            [label.topAnchor constraintEqualToAnchor:self.safeAreaLayoutGuide.topAnchor constant:10],
+            [label.trailingAnchor constraintEqualToAnchor:self.trailingAnchor constant:-10]
+        ]];
+        
+        // Initialize with good defaults
         _colorCodingEnabled = YES;
         _goodFPSThreshold = 50.0;
         _mediumFPSThreshold = 30.0;
         _goodFPSColor = [UIColor greenColor];
         _mediumFPSColor = [UIColor yellowColor];
         _poorFPSColor = [UIColor redColor];
-        
-        // Initialize display mode to normal
         _displayMode = FPSDisplayModeNormal;
-        _graphEnabled = YES;
-        _thermalMonitoringEnabled = NO; // Default to off
         
-        // Check for privacy mode
+        // Check for app filtering
         NSString *currentBundleID = [[NSBundle mainBundle] bundleIdentifier];
-        _isInPrivacyMode = [self shouldActivatePrivacyModeForApp:currentBundleID];
-        if (_isInPrivacyMode) {
-            self.hidden = YES;
-        }
+        _isInPrivacyMode = ![self shouldShowInApp:currentBundleID];
         
-        // Create and configure the FPS label
-        UILabel *label = [[UILabel alloc] init];
-        label.font = [UIFont monospacedDigitSystemFontOfSize:14 weight:UIFontWeightBold];
-        label.textAlignment = NSTextAlignmentCenter;
-        label.layer.cornerRadius = 5;
-        label.layer.masksToBounds = YES;
+        // Set initial visible state
+        self.hidden = _isInPrivacyMode;
         
-        if (@available(iOS 13.0, *)) {
-            self.backgroundColor = [UIColor clearColor];
-            label.backgroundColor = [[UIColor systemBackgroundColor] colorWithAlphaComponent:0.7];
-            label.textColor = [UIColor labelColor];
-        } else {
-            label.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.7];
-            label.textColor = [UIColor yellowColor];
-        }
-        
-        // Create and configure the temperature label
-        UILabel *tempLabel = [[UILabel alloc] init];
-        tempLabel.font = [UIFont systemFontOfSize:10];
-        tempLabel.textAlignment = NSTextAlignmentCenter;
-        tempLabel.layer.cornerRadius = 5;
-        tempLabel.layer.masksToBounds = YES;
-        tempLabel.backgroundColor = label.backgroundColor;
-        tempLabel.textColor = label.textColor;
-        tempLabel.alpha = 0.0; // Start hidden
-        tempLabel.translatesAutoresizingMaskIntoConstraints = NO;
-        [self addSubview:tempLabel];
-        self.temperatureLabel = tempLabel;
-        
-        // Create and configure the graph view
-        FPSGraphView *graphView = [[FPSGraphView alloc] initWithFrame:CGRectMake(0, 0, 160, 80)];
-        graphView.translatesAutoresizingMaskIntoConstraints = NO;
-        graphView.alpha = 0.0; // Start hidden
-        graphView.layer.cornerRadius = 5;
-        [self addSubview:graphView];
-        self.graphView = graphView;
-        
-        // Setup graph view gesture recognizers
-        UITapGestureRecognizer *graphTap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleGraphViewTap:)];
-        [graphView addGestureRecognizer:graphTap];
-        graphView.userInteractionEnabled = YES;
-        
-        // Use Auto Layout for better positioning
-        label.translatesAutoresizingMaskIntoConstraints = NO;
-        [self addSubview:label];
-        self.fpsLabel = label;
-        
-        // Initial positioning constraints
-        [NSLayoutConstraint activateConstraints:@[
-            [label.widthAnchor constraintEqualToConstant:kFPSLabelWidth],
-            [label.heightAnchor constraintEqualToConstant:kFPSLabelHeight],
-            [label.topAnchor constraintEqualToAnchor:self.safeAreaLayoutGuide.topAnchor constant:5],
-            [label.trailingAnchor constraintEqualToAnchor:self.trailingAnchor constant:-5]
-        ]];
-        
-        // Graph view constraints - anchored to FPS label
-        [NSLayoutConstraint activateConstraints:@[
-            [graphView.widthAnchor constraintEqualToConstant:160],
-            [graphView.heightAnchor constraintEqualToConstant:80],
-            [graphView.topAnchor constraintEqualToAnchor:label.bottomAnchor constant:5],
-            [graphView.trailingAnchor constraintEqualToAnchor:label.trailingAnchor]
-        ]];
-        
-        // Temperature label constraints - anchored below FPS label
-        [NSLayoutConstraint activateConstraints:@[
-            [tempLabel.widthAnchor constraintEqualToConstant:120],
-            [tempLabel.heightAnchor constraintEqualToConstant:20],
-            [tempLabel.topAnchor constraintEqualToAnchor:label.bottomAnchor constant:5],
-            [tempLabel.trailingAnchor constraintEqualToAnchor:label.trailingAnchor]
-        ]];
-        
-        // Add pan gesture for repositioning
-        UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handleFPSLabelPan:)];
-        [label addGestureRecognizer:pan];
-        
-        // Add double tap gesture for cycling display modes
-        UITapGestureRecognizer *doubleTap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleFPSLabelDoubleTap:)];
-        doubleTap.numberOfTapsRequired = 2;
-        [label addGestureRecognizer:doubleTap];
-        
-        // Add long press gesture for toggling thermal monitoring
-        UILongPressGestureRecognizer *longPress = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleFPSLabelLongPress:)];
-        longPress.minimumPressDuration = 1.0; // 1 second long press
-        [label addGestureRecognizer:longPress];
-        
-        // Make sure single tap doesn't interfere with double tap
-        [pan requireGestureRecognizerToFail:doubleTap];
-        [doubleTap requireGestureRecognizerToFail:longPress];
-        
-        label.userInteractionEnabled = YES;
-        
-        // Load saved position from preferences
-        [self loadPositionFromPreferences];
-        
-        // Register for notifications
-        [[NSNotificationCenter defaultCenter] addObserver:self
-                                                selector:@selector(orientationDidChange:)
-                                                    name:UIDeviceOrientationDidChangeNotification
-                                                  object:nil];
-        
-        if (@available(iOS 11.0, *)) {
-            [[NSNotificationCenter defaultCenter] addObserver:self
-                                                    selector:@selector(screenCaptureDidChange:)
-                                                        name:UIScreenCapturedDidChangeNotification
-                                                      object:nil];
-        }
-        
-        if (@available(iOS 13.0, *)) {
-            [[NSNotificationCenter defaultCenter] addObserver:self
-                                                    selector:@selector(sceneDidBecomeActive:)
-                                                        name:UISceneDidActivateNotification
-                                                      object:nil];
-        }
-        
-        // Register for thermal data updates
-        [[NSNotificationCenter defaultCenter] addObserver:self
-                                               selector:@selector(thermalDataDidUpdate:)
-                                                   name:@"FPSThermalDataUpdatedNotification"
-                                                 object:nil];
-        
-        // Apply appearance from saved preferences
+        // Apply saved preferences
         [self loadAppearanceFromPreferences];
         
         _isInitialized = YES;
+        
+        // Set an initial value to make sure the label is visible
+        self.fpsLabel.text = @"FPS: --";
+        
+        // Log information about our window
+        NSLog(@"FPSIndicator: Window initialized with level: %f, rootless: %@, bundle: %@", 
+              self.windowLevel, 
+              [[NSFileManager defaultManager] fileExistsAtPath:@"/var/jb"] ? @"YES" : @"NO",
+              currentBundleID);
     }
 }
 
@@ -393,13 +373,28 @@ static NSArray *kPrivacyModeApps;
     // Don't show if we're in privacy mode
     if (_isInPrivacyMode) {
         self.hidden = YES;
+        NSLog(@"FPSIndicator: Hiding due to privacy mode for app: %@", [[NSBundle mainBundle] bundleIdentifier]);
         return;
     }
     
     self.hidden = !visible;
+    NSLog(@"FPSIndicator: Setting visibility to %@", visible ? @"YES" : @"NO");
     
     if (visible) {
+        // Show a debug message with important info
+        NSLog(@"FPSIndicator: Making window visible at level %f with bundle ID %@", 
+              self.windowLevel, [[NSBundle mainBundle] bundleIdentifier]);
+              
+        // Ensure the window is positioned correctly
+        [self updateFrameForCurrentOrientation];
+        
+        // Force window to be key and visible
         [self makeKeyAndVisible];
+        
+        // Set an initial text to make sure label is visible
+        if (!self.fpsLabel.text || [self.fpsLabel.text length] == 0) {
+            self.fpsLabel.text = @"FPS";
+        }
     }
 }
 
@@ -493,7 +488,62 @@ static NSArray *kPrivacyModeApps;
 - (BOOL)shouldActivatePrivacyModeForApp:(NSString *)bundleID {
     if (!bundleID || !_privacyAppList) return NO;
     
-    return [_privacyAppList containsObject:bundleID];
+    BOOL isInPrivacyList = [_privacyAppList containsObject:bundleID];
+    
+    // Log privacy mode status for debugging
+    NSLog(@"FPSIndicator: Privacy check for %@ - In privacy list: %@", 
+          bundleID, isInPrivacyList ? @"YES" : @"NO");
+    
+    return isInPrivacyList;
+}
+
+- (BOOL)shouldShowInApp:(NSString *)bundleID {
+    if (!bundleID) return NO;
+    
+    // Check preferences to see which apps are enabled
+    NSMutableDictionary *prefs = [[NSMutableDictionary alloc] initWithContentsOfFile:kPrefPath];
+    if (!prefs) {
+        // If no preferences, default to show in all apps
+        return YES;
+    }
+    
+    NSArray *enabledApps = prefs[@"enabledApps"];
+    if (!enabledApps || enabledApps.count == 0) {
+        // Default to all apps if not specified
+        return YES;
+    }
+    
+    // If "*" is in the list, show in all apps (except privacy list)
+    if ([enabledApps containsObject:@"*"]) {
+        // But still check if this app is in the privacy list
+        if ([self shouldActivatePrivacyModeForApp:bundleID]) {
+            return NO;
+        }
+        return YES;
+    }
+    
+    // Check for game categories
+    if ([enabledApps containsObject:@"games"]) {
+        if ([[FPSGameSupport sharedInstance] isGameApp:bundleID]) {
+            return YES;
+        }
+    }
+    
+    // Check for game engines
+    if ([enabledApps containsObject:@"unity"]) {
+        if ([[FPSGameSupport sharedInstance] isUnityApp]) {
+            return YES;
+        }
+    }
+    
+    if ([enabledApps containsObject:@"unreal"]) {
+        if ([[FPSGameSupport sharedInstance] isUnrealApp]) {
+            return YES;
+        }
+    }
+    
+    // Finally check if this specific app is enabled
+    return [enabledApps containsObject:bundleID];
 }
 
 - (UIColor *)colorFromHexString:(NSString *)hexString fallback:(UIColor *)fallbackColor {

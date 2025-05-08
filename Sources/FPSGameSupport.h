@@ -106,4 +106,11 @@ typedef NS_ENUM(NSInteger, GameEngineType) {
  */
 - (BOOL)shouldEnablePrivacyMode;
 
+/**
+ * Determines if a given bundle ID is likely a game app
+ * @param bundleID The bundle ID to check
+ * @return YES if the app is likely a game
+ */
+- (BOOL)isGameApp:(NSString *)bundleID;
+
 @end

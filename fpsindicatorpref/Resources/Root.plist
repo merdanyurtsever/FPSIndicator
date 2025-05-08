@@ -4,11 +4,12 @@
 <dict>
 	<key>items</key>
 	<array>
+		<!-- Main Toggle -->
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
-			<string></string>
+			<string>Status</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -20,47 +21,35 @@
 			<key>key</key>
 			<string>enabled</string>
 			<key>label</key>
-			<string>ENABLED</string>
+			<string>Enable FPS Indicator</string>
 			<key>PostNotification</key>
 			<string>com.fpsindicator/loadPref</string>
-		</dict>
-
-		<dict>
-			<key>cell</key>
-			<string>PSGroupCell</string>
-			<key>footerText</key>
-			<string></string>
-		</dict>
-		<dict>
-			<key>cell</key>
-				<string>PSSegmentCell</string>
-			<key>default</key>
-			<integer>1</integer>
-			<key>defaults</key>
-			<string>com.fpsindicator</string>
-			<key>key</key>
-			<string>fpsMode</string>
-			<key>label</key>
-			<string>FPS_TYPE</string>
-			<key>validTitles</key>
-			<array>
-				<string>FPS</string>
-				<string>PFPS</string>
-			</array>
-			<key>validValues</key>
-			<array>
-				<integer>1</integer>
-				<integer>2</integer>
-			</array>
-			<key>PostNotification</key>
-			<string>com.fpsindicator/loadPref</string>
+			<key>requiresRespring</key>
+			<true/>
 		</dict>
 		
+		<!-- App Selection -->
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
-			<string>POSITION</string>
+			<string>Applications</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>label</key>
+				<string>Select Apps</string>
+			<key>action</key>
+			<string>selectApps</string>
+		</dict>
+		
+		<!-- Simple Appearance -->
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Appearance</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -70,9 +59,9 @@
 			<key>defaults</key>
 			<string>com.fpsindicator</string>
 			<key>key</key>
-			<string>positionPreset</string>
+			<string>position</string>
 			<key>label</key>
-			<string>POSITION_PRESET</string>
+			<string>Position</string>
 			<key>validTitles</key>
 			<array>
 				<string>Top Right</string>
@@ -92,71 +81,6 @@
 		</dict>
 		<dict>
 			<key>cell</key>
-			<string>PSButtonCell</string>
-			<key>label</key>
-			<string>RESET_POSITION</string>
-			<key>action</key>
-			<string>resetPosition</string>
-		</dict>
-
-		<dict>
-			<key>cell</key>
-			<string>PSGroupCell</string>
-			<key>label</key>
-			<string>APPEARANCE</string>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSSliderCell</string>
-			<key>default</key>
-			<real>1.0</real>
-			<key>defaults</key>
-			<string>com.fpsindicator</string>
-			<key>key</key>
-			<string>opacity</string>
-			<key>min</key>
-			<real>0.1</real>
-			<key>max</key>
-			<real>1.0</real>
-			<key>showValue</key>
-			<true/>
-			<key>label</key>
-			<string>OPACITY</string>
-			<key>PostNotification</key>
-			<string>com.fpsindicator/loadPref</string>
-			<key>isSegmented</key>
-			<true/>
-			<key>segmentCount</key>
-			<integer>10</integer>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSLinkListCell</string>
-			<key>default</key>
-			<string>system</string>
-			<key>defaults</key>
-			<string>com.fpsindicator</string>
-			<key>key</key>
-			<string>appearance</string>
-			<key>label</key>
-			<string>THEME</string>
-			<key>validTitles</key>
-			<array>
-				<string>System</string>
-				<string>Light</string>
-				<string>Dark</string>
-			</array>
-			<key>validValues</key>
-			<array>
-				<string>system</string>
-				<string>light</string>
-				<string>dark</string>
-			</array>
-			<key>PostNotification</key>
-			<string>com.fpsindicator/loadPref</string>
-		</dict>
-		<dict>
-			<key>cell</key>
 			<string>PSLinkListCell</string>
 			<key>default</key>
 			<string>#00FF00</string>
@@ -165,7 +89,7 @@
 			<key>key</key>
 			<string>color</string>
 			<key>label</key>
-			<string>TEXT_COLOR</string>
+			<string>Text Color</string>
 			<key>validTitles</key>
 			<array>
 				<string>Green</string>
@@ -185,101 +109,18 @@
 			<key>PostNotification</key>
 			<string>com.fpsindicator/loadPref</string>
 		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSSliderCell</string>
-			<key>default</key>
-			<real>14.0</real>
-			<key>defaults</key>
-			<string>com.fpsindicator</string>
-			<key>key</key>
-			<string>fontSize</string>
-			<key>min</key>
-			<real>10.0</real>
-			<key>max</key>
-			<real>20.0</real>
-			<key>showValue</key>
-			<true/>
-			<key>label</key>
-			<string>FONT_SIZE</string>
-			<key>PostNotification</key>
-			<string>com.fpsindicator/loadPref</string>
-			<key>isSegmented</key>
-			<true/>
-			<key>segmentCount</key>
-			<integer>10</integer>
-		</dict>
-
-		<dict>
-			<key>cell</key>
-			<string>PSGroupCell</string>
-			<key>label</key>
-			<string>PRIVACY</string>
-			<key>footerText</key>
-			<string>FPS indicator will be hidden in selected apps</string>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
-			<key>defaults</key>
-			<string>com.fpsindicator</string>
-			<key>key</key>
-			<string>enablePrivacyMode</string>
-			<key>label</key>
-			<string>PRIVACY_MODE</string>
-			<key>PostNotification</key>
-			<string>com.fpsindicator/loadPref</string>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSButtonCell</string>
-			<key>label</key>
-			<string>MANAGE_PRIVACY_APPS</string>
-			<key>action</key>
-			<string>managePrivacyApps</string>
-		</dict>
-
-		<dict>
-			<key>cell</key>
-			<string>PSGroupCell</string>
-			<key>label</key>
-			<string>DATA_EXPORT</string>
-			<key>footerText</key>
-			<string>Save FPS data for later analysis</string>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSSwitchCell</string>
-			<key>default</key>
-			<false/>
-			<key>defaults</key>
-			<string>com.fpsindicator</string>
-			<key>key</key>
-			<string>enableLogging</string>
-			<key>label</key>
-			<string>ENABLE_LOGGING</string>
-			<key>PostNotification</key>
-			<string>com.fpsindicator/loadPref</string>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSButtonCell</string>
-			<key>label</key>
-			<string>EXPORT_LOG</string>
-			<key>action</key>
-			<string>exportFPSData</string>
-		</dict>
-
+		
+		<!-- Footer Section -->
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>footerText</key>
-			<string>DESCRIPTION</string>
+			<string>FPSIndicator shows frames per second in compatible apps and games.
+			
+Restart the app after changing settings.</string>
 		</dict>
 	</array>
 	<key>title</key>
-	<string>FPSIndicator</string>
+	<string>FPS Indicator</string>
 </dict>
 </plist>

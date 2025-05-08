@@ -4,6 +4,12 @@
             "com.apple.UIKit",
             "com.apple.Metal",
             "com.apple.QuartzCore",
+            "com.apple.CoreAnimation",
+            "com.apple.SceneKit",
+            "com.apple.SpriteKit",
+            "com.apple.GLKit",
+            "com.apple.MetalKit",
+            "com.apple.AVFoundation",
             "com.tencent.ig",
             "com.pubg.krmobile",
             "com.tencent.tmgp.pubgmhd"

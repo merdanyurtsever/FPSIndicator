@@ -421,4 +421,73 @@
     return _isGameMakerApp;
 }
 
+/**
+ * Determines if a bundle ID corresponds to a game app
+ * Uses heuristics and known game bundle ID patterns
+ * @param bundleID The bundle ID to check
+ * @return YES if the app is likely a game
+ */
+- (BOOL)isGameApp:(NSString *)bundleID {
+    if (!bundleID) return NO;
+    
+    // Check if it's a known game engine app
+    if ([self isUnityApp] || [self isUnrealApp] || [self isCocos2DApp] || 
+        [self isGodotApp] || [self isGameMakerApp]) {
+        return YES;
+    }
+    
+    // Check for common game publisher identifiers
+    NSArray *gamePublishers = @[
+        @"com.supercell",
+        @"com.king",
+        @"com.rovio",
+        @"com.ea.",
+        @"com.gameloft",
+        @"com.activision",
+        @"com.ubisoft",
+        @"com.tencent",
+        @"com.epicgames",
+        @"com.nintendo",
+        @"com.sega",
+        @"io.playimpact",
+        @"com.mojang",
+        @"com.namco",
+        @"com.squareenix",
+        @"com.rockstar",
+        @"com.playrix",
+        @"com.dena",
+        @"com.zynga",
+        @"com.innersloth",
+        @"com.miHoYo"
+    ];
+    
+    for (NSString *publisher in gamePublishers) {
+        if ([bundleID hasPrefix:publisher]) {
+            return YES;
+        }
+    }
+    
+    // Check for common game words in the bundle ID
+    NSArray *gameKeywords = @[
+        @"game", @"play", @"rpg", @"arcade", @"shooter", @"racing",
+        @"puzzle", @"strategy", @"battle", @"adventure", @"quest",
+        @"card", @"casino", @"chess", @"football", @"soccer", 
+        @"basketball", @"golf", @"tennis", @"sport"
+    ];
+    
+    NSString *lowercaseBundleID = [bundleID lowercaseString];
+    for (NSString *keyword in gameKeywords) {
+        if ([lowercaseBundleID containsString:keyword]) {
+            return YES;
+        }
+    }
+    
+    // Check for known PUBG and similar games
+    if ([_pubgBundleIDs containsObject:bundleID]) {
+        return YES;
+    }
+    
+    return NO;
+}
+
 @end

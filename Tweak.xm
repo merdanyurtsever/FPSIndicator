@@ -6,6 +6,10 @@
 #import "Sources/FPSCalculator.h"
 #import "Sources/FPSDisplayWindow.h"
 #import "Sources/FPSGameSupport.h"
+#import "Sources/FPSAlternativeOverlay.h"
+
+// Debug flag - enable for verbose logging
+#define FPS_DEBUG 1
 
 // Define OpenGL ES silence deprecation warnings before any OpenGL imports
 #pragma clang diagnostic push
@@ -37,13 +41,21 @@ static void loadPreferences() {
     NSLog(@"FPSIndicator: Loading preferences");
     
     NSMutableDictionary *prefs = [[NSMutableDictionary alloc] initWithContentsOfFile:kPrefPath];
-    if (!prefs) prefs = [NSMutableDictionary dictionary];
+    if (!prefs) {
+        NSLog(@"FPSIndicator: No preferences found at path: %@, using defaults", kPrefPath);
+        prefs = [NSMutableDictionary dictionary];
+    }
     
     // Cache the preferences for later use
     prefsCache = [prefs mutableCopy];
     
     // Get enabled state with default
     enabled = prefs[@"enabled"] ? [prefs[@"enabled"] boolValue] : YES;
+    
+    if (FPS_DEBUG) {
+        NSLog(@"FPSIndicator: Debug - Enabled state: %@", enabled ? @"YES" : @"NO");
+        NSLog(@"FPSIndicator: Debug - Bundle ID: %@", [[NSBundle mainBundle] bundleIdentifier]);
+    }
     
     // Configure FPS calculation mode
     NSInteger fpsMode = prefs[@"fpsMode"] ? [prefs[@"fpsMode"] intValue] : FPSModeAverage;
@@ -84,8 +96,11 @@ static void startFPSDisplayTimer() {
         // Get current FPS value
         double fps = [[FPSCalculator sharedInstance] currentFPS];
         
-        // Update display
+        // Update display using both methods for maximum compatibility
         [[FPSDisplayWindow sharedInstance] updateWithFPS:fps];
+        
+        // Also use our CALayer-based alternative method
+        [[FPSAlternativeOverlay sharedInstance] showWithFPS:fps];
         
         // Export/log FPS data if enabled
         if (prefsCache && prefsCache[@"enableLogging"] && [prefsCache[@"enableLogging"] boolValue]) {
@@ -265,6 +280,51 @@ static void handleScreenRecording() {
 %end
 %end // scenes
 
+// Core Animation hooks
+%group coreanimation
+%hook CALayer
+- (void)display {
+    %orig;
+    [[FPSCalculator sharedInstance] frameTick];
+}
+
+- (void)setNeedsDisplay {
+    %orig;
+    // Only count actual redraws, not just marking for redisplay
+    if (self.superlayer == nil) {  // Root layer
+        [[FPSCalculator sharedInstance] frameTick];
+    }
+}
+%end
+
+%hook CADisplayLink
+- (void)addToRunLoop:(NSRunLoop *)runloop forMode:(NSString *)mode {
+    %orig;
+    if (FPS_DEBUG) {
+        NSLog(@"FPSIndicator: DisplayLink added to runloop for %@", mode);
+    }
+}
+
+- (void)setPaused:(BOOL)paused {
+    %orig;
+    if (FPS_DEBUG) {
+        NSLog(@"FPSIndicator: DisplayLink paused: %@", paused ? @"YES" : @"NO");
+    }
+}
+%end
+%end // coreanimation
+
+// OpenGL ES hooks
+%group opengl
+%hook EAGLContext
+- (BOOL)presentRenderbuffer:(NSUInteger)target {
+    BOOL result = %orig;
+    [[FPSCalculator sharedInstance] frameTick];
+    return result;
+}
+%end
+%end // opengl
+
 %ctor {
     @autoreleasepool {
         NSLog(@"FPSIndicator: Initializing");
@@ -278,13 +338,52 @@ static void handleScreenRecording() {
             loadPreferences();
         });
         
-        // Initialize core hooks
+        // Initialize core hooks - make sure all rendering paths are covered
         %init(metal);
         %init(ui);
+        %init(coreanimation);
+        %init(opengl);
         
         // Initialize iOS 13+ scene support if available
         if (@available(iOS 13.0, *)) {
             %init(scenes);
         }
+        
+        // Note: Unity and Unreal hooks are initialized in the UIWindow hook
+        // for proper timing after the app is fully loaded
+        
+        // Load preferences immediately 
+        loadPreferences();
+        
+        if (FPS_DEBUG) {
+            NSLog(@"FPSIndicator: All hooks initialized for bundle: %@", [[NSBundle mainBundle] bundleIdentifier]);
+            NSLog(@"FPSIndicator: Window level set to: %f", [[FPSDisplayWindow sharedInstance] windowLevel]);
+        }
+        
+        // Force FPS window creation after a short delay
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            [[FPSDisplayWindow sharedInstance] makeKeyAndVisible];
+            [[FPSDisplayWindow sharedInstance] setVisible:YES];
+            
+            // Schedule a second attempt to show the FPS window after 3 seconds
+            // This helps catch apps that might dismiss or hide overlay windows during startup
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                [[FPSDisplayWindow sharedInstance] makeKeyAndVisible];
+                [[FPSDisplayWindow sharedInstance] setVisible:enabled && !isScreenRecording];
+                
+                if (FPS_DEBUG) {
+                    NSLog(@"FPSIndicator: Second attempt to show window for bundle: %@", 
+                          [[NSBundle mainBundle] bundleIdentifier]);
+                }
+                
+                // Start the timer to update the FPS display
+                startFPSDisplayTimer();
+            });
+            
+            if (FPS_DEBUG) {
+                NSLog(@"FPSIndicator: Window forced to appear for bundle: %@", 
+                      [[NSBundle mainBundle] bundleIdentifier]);
+            }
+        });
     }
 }
