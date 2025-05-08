@@ -59,8 +59,44 @@
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
-			<key>footerText</key>
-			<string>DESCRIPTION</string>
+			<key>label</key>
+			<string>POSITION</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSegmentCell</string>
+			<key>default</key>
+			<integer>0</integer>
+			<key>defaults</key>
+			<string>com.fpsindicator</string>
+			<key>key</key>
+			<string>positionPreset</string>
+			<key>label</key>
+			<string>POSITION_PRESET</string>
+			<key>validTitles</key>
+			<array>
+				<string>Top Right</string>
+				<string>Top Left</string>
+				<string>Bottom Right</string>
+				<string>Bottom Left</string>
+			</array>
+			<key>validValues</key>
+			<array>
+				<integer>0</integer>
+				<integer>1</integer>
+				<integer>2</integer>
+				<integer>3</integer>
+			</array>
+			<key>PostNotification</key>
+			<string>com.fpsindicator/loadPref</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>label</key>
+			<string>RESET_POSITION</string>
+			<key>action</key>
+			<string>resetPosition</string>
 		</dict>
 
 		<dict>
@@ -121,11 +157,126 @@
 		</dict>
 		<dict>
 			<key>cell</key>
+			<string>PSLinkListCell</string>
+			<key>default</key>
+			<string>#00FF00</string>
+			<key>defaults</key>
+			<string>com.fpsindicator</string>
+			<key>key</key>
+			<string>color</string>
+			<key>label</key>
+			<string>TEXT_COLOR</string>
+			<key>validTitles</key>
+			<array>
+				<string>Green</string>
+				<string>Yellow</string>
+				<string>Red</string>
+				<string>White</string>
+				<string>Blue</string>
+			</array>
+			<key>validValues</key>
+			<array>
+				<string>#00FF00</string>
+				<string>#FFFF00</string>
+				<string>#FF0000</string>
+				<string>#FFFFFF</string>
+				<string>#0000FF</string>
+			</array>
+			<key>PostNotification</key>
+			<string>com.fpsindicator/loadPref</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSliderCell</string>
+			<key>default</key>
+			<real>14.0</real>
+			<key>defaults</key>
+			<string>com.fpsindicator</string>
+			<key>key</key>
+			<string>fontSize</string>
+			<key>min</key>
+			<real>10.0</real>
+			<key>max</key>
+			<real>20.0</real>
+			<key>showValue</key>
+			<true/>
+			<key>label</key>
+			<string>FONT_SIZE</string>
+			<key>PostNotification</key>
+			<string>com.fpsindicator/loadPref</string>
+			<key>isSegmented</key>
+			<true/>
+			<key>segmentCount</key>
+			<integer>10</integer>
+		</dict>
+
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>PRIVACY</string>
+			<key>footerText</key>
+			<string>FPS indicator will be hidden in selected apps</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.fpsindicator</string>
+			<key>key</key>
+			<string>enablePrivacyMode</string>
+			<key>label</key>
+			<string>PRIVACY_MODE</string>
+			<key>PostNotification</key>
+			<string>com.fpsindicator/loadPref</string>
+		</dict>
+		<dict>
+			<key>cell</key>
 			<string>PSButtonCell</string>
 			<key>label</key>
-			<string>RESET_POSITION</string>
+			<string>MANAGE_PRIVACY_APPS</string>
 			<key>action</key>
-			<string>resetPosition</string>
+			<string>managePrivacyApps</string>
+		</dict>
+
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>DATA_EXPORT</string>
+			<key>footerText</key>
+			<string>Save FPS data for later analysis</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.fpsindicator</string>
+			<key>key</key>
+			<string>enableLogging</string>
+			<key>label</key>
+			<string>ENABLE_LOGGING</string>
+			<key>PostNotification</key>
+			<string>com.fpsindicator/loadPref</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>label</key>
+			<string>EXPORT_LOG</string>
+			<key>action</key>
+			<string>exportFPSData</string>
+		</dict>
+
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>footerText</key>
+			<string>DESCRIPTION</string>
 		</dict>
 	</array>
 	<key>title</key>

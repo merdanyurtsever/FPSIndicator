@@ -1,80 +1,83 @@
 # FPSIndicator
 
-A real-time FPS (Frames Per Second) indicator for iOS games and applications.
+A lightweight, non-intrusive FPS counter for iOS that works system-wide and with special optimizations for games.
 
 ## Features
 
-- Real-time FPS monitoring
-- Supports both Metal and UIKit-based applications
-- Customizable display options:
-  - Average FPS mode
-  - Per-second FPS mode
-  - Adjustable opacity
-  - Draggable indicator position
-  - Light/Dark/System theme support
-- iOS 13+ optimized with proper window scene support
-- Low power mode aware
-- Screen recording compatible
-- Settings integration in iOS Settings app
-
-## Supported Games & Apps
-
-- PUBG Mobile (Global, Korean, and Chinese versions)
-- Any Metal-based games and applications
-- UIKit-based applications
-
-## Requirements
-
-- iOS 11.0 or later
-- Jailbroken device
+- **Real-time FPS monitoring** - See your frame rate in real-time across all apps and games
+- **Multiple calculation methods** - Choose between average FPS (smoother) or per-second FPS (more responsive)
+- **Game engine optimization** - Special support for Unity, Unreal, and PUBG Mobile games
+- **Position presets** - Easily position the indicator in any corner or drag to a custom position
+- **Appearance customization** - Color, opacity, size, and theme options
+- **Privacy mode** - Automatically hide the indicator in banking and other sensitive apps
+- **iOS compatibility** - Supports iOS 12-17 with proper UIScene support for iPad Stage Manager
+- **Performance data export** - Log and export FPS data for analysis
+- **Low power mode** - Automatically adjusts refresh rate to conserve battery
 
 ## Installation
 
-1. Add the repository: `https://brendonjkding.github.io`
-2. Install FPSIndicator via your package manager (Cydia/Sileo)
+1. Add the repository to your package manager: `https://repo.example.com`
+2. Search for "FPSIndicator" and install it
 3. Respring your device
-4. Configure settings in iOS Settings app under "FPSIndicator"
 
 ## Usage
 
-- The FPS counter will appear automatically in supported applications
-- Drag the indicator to reposition it
-- Use Settings to:
-  - Toggle the indicator on/off
-  - Switch between average and per-second FPS display
-  - Adjust appearance settings
-  - Reset position
+After installation, a small FPS counter will appear in the top-right corner of your screen.
 
-## Known Issues
+- **Drag** the counter to reposition it
+- **Configure** the indicator in Settings app → FPSIndicator
 
-- The indicator may not appear in some full-screen games
-- Position may reset after device rotation in certain apps
+## Technical Details
 
-## Building from Source
+FPSIndicator uses a modular architecture:
 
-```bash
-make package
-```
+- **FPSCalculator** - Handles the frame rate calculation with thread safety and power optimization
+- **FPSDisplayWindow** - Manages the UI display with customization and positioning
+- **FPSGameSupport** - Provides specialized support for different game engines
 
-## Contributing
+## Privacy Mode
 
-Feel free to submit issues and enhancement requests.
+In privacy mode, the FPS indicator is automatically hidden in selected apps:
+
+- Banking apps (default)
+- Any apps added to your privacy list in settings
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT License - See LICENSE file for details.
 
-## Special Thanks
+## Credits
 
-- [masagrator/NX-FPS](https://github.com/masagrator/NX-FPS) - FPS calculation implementation
-- [JoeyDeVries/LearnOpenGL](https://github.com/JoeyDeVries/LearnOpenGL) - OpenGL insights
-- [loyinglin/LearnMetal](https://github.com/loyinglin/LearnMetal) - Metal implementation references
+- Original concept inspired by NX-FPS
+- Special thanks to the jailbreak community for testing
 
-## Author
+## Troubleshooting
 
-[brendonjkding](https://github.com/brendonjkding)
+### FPS not showing in games?
 
-## Support
+Some games use custom rendering methods. Try these solutions:
 
-- [GitHub Issues](https://github.com/brendonjkding/FPSIndicator/issues)
-- [Twitter](https://twitter.com/brendonjkding)
+1. Open FPSIndicator settings and increase opacity
+2. Make sure the game is not in your privacy list
+3. Some games may require a higher window level setting
+
+### Battery drain concerns?
+
+The tweak automatically reduces refresh rate in low power mode. You can also:
+
+1. Use a smaller font size
+2. Disable logging when not needed
+3. Disable the tweak in games where you don't need it
+
+## Changelog
+
+### v1.0.0
+- Complete rewrite with modular architecture
+- Enhanced game engine support
+- Added privacy mode
+- Added position presets
+- Added FPS data export
+- Improved thread safety and performance
+
+### v0.0.5
+- Initial public release
