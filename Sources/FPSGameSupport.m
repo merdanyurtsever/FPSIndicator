@@ -1,5 +1,6 @@
 #import "FPSGameSupport.h"
 #import <UIKit/UIKit.h>
+#import "FPSAlternativeOverlay.h"
 
 // NSTask interface declaration for iOS since it's not public
 @interface NSTask : NSObject
@@ -105,6 +106,7 @@
             
         case GameEngineTypePUBG:
             NSLog(@"FPSIndicator: Initializing PUBG Mobile support");
+            [self initializePUBGMobileSupport];
             break;
             
         case GameEngineTypeCocos2D:
@@ -123,6 +125,75 @@
         default:
             NSLog(@"FPSIndicator: Using standard engine support");
             break;
+    }
+}
+
+// New method for PUBG Mobile-specific support
+- (void)initializePUBGMobileSupport {
+    // Use CALayer-based overlay instead of UIWindow for PUBG
+    // This avoids detection by PUBG's anti-cheat system
+    [[FPSAlternativeOverlay sharedInstance] showWithFPS:0]; // Initialize with 0 FPS
+    
+    // Set up delayed initialization to avoid anti-cheat detection
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        // Initialize Metal frame counting
+        [self setupMetalFrameCounter];
+    });
+}
+
+// Setup Metal frame counter for more accurate PUBG FPS counting
+- (void)setupMetalFrameCounter {
+    // This method should be called after the game has fully initialized
+    // to avoid early detection by anti-cheat
+    if (!_isPUBGApp) return;
+    
+    NSLog(@"FPSIndicator: Setting up Metal frame counter for PUBG Mobile");
+    
+    // Use CADisplayLink with a very low update frequency to minimize detection risk
+    CADisplayLink *displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(updatePUBGFrameCounter:)];
+    if (@available(iOS 10.0, *)) {
+        displayLink.preferredFramesPerSecond = 2; // Update at only 2Hz to minimize footprint
+    } else {
+        // For older iOS versions, use frameInterval but suppress the deprecation warning
+        #pragma clang diagnostic push
+        #pragma clang diagnostic ignored "-Wdeprecated-declarations"
+        displayLink.frameInterval = 30; // ~2Hz (60/30)
+        #pragma clang diagnostic pop
+    }
+    [displayLink addToRunLoop:[NSRunLoop mainRunLoop] forMode:NSRunLoopCommonModes];
+}
+
+// Update method for PUBG Metal frame counter
+- (void)updatePUBGFrameCounter:(CADisplayLink *)link {
+    if (!_isPUBGApp) return;
+    
+    // Get FPS from CADisplayLink
+    static CFTimeInterval lastTime = 0;
+    static NSInteger frameCount = 0;
+    static double lastFPS = 0;
+    
+    // First update
+    if (lastTime == 0) {
+        lastTime = link.timestamp;
+        return;
+    }
+    
+    // Calculate time elapsed since last update
+    CFTimeInterval currentTime = link.timestamp;
+    CFTimeInterval timeDelta = currentTime - lastTime;
+    
+    frameCount++;
+    
+    // Update every ~0.5 seconds
+    if (timeDelta >= 0.5) {
+        lastFPS = frameCount / timeDelta;
+        frameCount = 0;
+        lastTime = currentTime;
+        
+        // Update the alternative overlay
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [[FPSAlternativeOverlay sharedInstance] showWithFPS:lastFPS];
+        });
     }
 }
 

@@ -20,11 +20,22 @@
 @property (nonatomic, strong) NSArray<NSString *> *privacyApps;
 @property (nonatomic, assign) CGPoint customPosition;
 
+// PUBG Mobile specific settings
+@property (nonatomic, assign) NSInteger pubgStealthMode;
+@property (nonatomic, assign) BOOL usePUBGSpecialMode;
+@property (nonatomic, assign) BOOL useMetalHooks;
+@property (nonatomic, assign) BOOL useQuartzCoreAPI;
+@property (nonatomic, assign) CGFloat pubgRefreshRate;
+
 // Methods
 - (void)loadPreferences;
 - (void)savePreferences;
 - (BOOL)shouldDisplayInApp:(NSString *)bundleID;
 - (BOOL)isPrivacyModeEnabledForApp:(NSString *)bundleID;
+
+// Utility methods
+- (UIColor *)colorFromHexString:(NSString *)hexString;
+- (NSString *)hexStringFromColor:(UIColor *)color;
 
 // Singleton accessor
 + (instancetype)sharedPreferences;

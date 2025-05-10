@@ -8,10 +8,19 @@ include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = FPSIndicator
 
-# Files updated for the revamped version
-FPSIndicator_FILES = Tweak.xm Sources/FPSCounter.m Sources/FPSDisplay.m Sources/FPSPreferences.m
+# Files updated for the PUBG Mobile enhanced version
+FPSIndicator_FILES = Tweak.xm \
+	Sources/FPSCounter.m \
+	Sources/FPSDisplay.m \
+	Sources/FPSPreferences.m \
+	Sources/FPSGameSupport.m \
+	Sources/FPSAlternativeOverlay.m \
+	Sources/FPSPUBGSupport.m \
+	Sources/FPSThermalMonitor.m \
+	Sources/FPSGraphView.m
+
 FPSIndicator_CFLAGS = -fobjc-arc -include Prefix.pch
-FPSIndicator_FRAMEWORKS = UIKit
+FPSIndicator_FRAMEWORKS = UIKit QuartzCore
 FPSIndicator_LIBRARIES = substrate
 FPSIndicator_INSTALL_PATH = /var/jb/Library/MobileSubstrate/DynamicLibraries
 

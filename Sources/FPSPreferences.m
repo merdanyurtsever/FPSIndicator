@@ -54,24 +54,37 @@
     _colorCoding = prefs[@"colorCoding"] ? [prefs[@"colorCoding"] boolValue] : YES;
     
     // Text color (with default white)
-    if (prefs[@"textColor"]) {
-        NSString *hexColor = prefs[@"textColor"];
-        _textColor = [self colorWithHexString:hexColor];
+    if (prefs[@"textColorHex"]) {
+        _textColor = [self colorFromHexString:prefs[@"textColorHex"]];
     } else {
         _textColor = [UIColor whiteColor];
     }
     
-    // Array values
-    _disabledApps = prefs[@"disabledApps"] ? prefs[@"disabledApps"] : @[];
-    _privacyApps = prefs[@"privacyApps"] ? prefs[@"privacyApps"] : @[];
+    // Arrays of app identifiers
+    _disabledApps = prefs[@"disabledApps"] ?: @[];
+    _privacyApps = prefs[@"privacyApps"] ?: @[];
     
-    // Custom position
-    if (prefs[@"positionX"] && prefs[@"positionY"]) {
-        CGFloat x = [prefs[@"positionX"] floatValue];
-        CGFloat y = [prefs[@"positionY"] floatValue];
-        _customPosition = CGPointMake(x, y);
-    } else {
-        _customPosition = CGPointMake(20, 40);
+    // Custom position (with default)
+    CGFloat posX = prefs[@"positionX"] ? [prefs[@"positionX"] floatValue] : 20.0;
+    CGFloat posY = prefs[@"positionY"] ? [prefs[@"positionY"] floatValue] : 40.0;
+    _customPosition = CGPointMake(posX, posY);
+    
+    // PUBG Mobile specific settings
+    _pubgStealthMode = prefs[@"pubgStealthMode"] ? [prefs[@"pubgStealthMode"] integerValue] : 1;
+    _usePUBGSpecialMode = prefs[@"usePUBGSpecialMode"] ? [prefs[@"usePUBGSpecialMode"] boolValue] : YES;
+    _useMetalHooks = prefs[@"useMetalHooks"] ? [prefs[@"useMetalHooks"] boolValue] : NO;
+    _useQuartzCoreAPI = prefs[@"useQuartzCoreAPI"] ? [prefs[@"useQuartzCoreAPI"] boolValue] : NO;
+    _pubgRefreshRate = prefs[@"pubgRefreshRate"] ? [prefs[@"pubgRefreshRate"] floatValue] : 2.0;
+    
+    // Apply settings to PUBG support if it's initialized
+    Class pubgSupportClass = NSClassFromString(@"FPSPUBGSupport");
+    if (pubgSupportClass) {
+        id sharedInstance = [pubgSupportClass performSelector:@selector(sharedInstance)];
+        if (sharedInstance) {
+            [sharedInstance setValue:@(_pubgStealthMode) forKey:@"stealthMode"];
+            [sharedInstance setValue:@(_useQuartzCoreAPI) forKey:@"useQuartzCoreDebug"];
+            [sharedInstance setValue:@(_pubgRefreshRate) forKey:@"refreshRate"];
+        }
     }
     
     // Apply preferences to FPSDisplay if it exists
@@ -124,6 +137,13 @@
     _prefsCache[@"disabledApps"] = self.disabledApps;
     _prefsCache[@"privacyApps"] = self.privacyApps;
     
+    // Save PUBG Mobile specific settings
+    _prefsCache[@"pubgStealthMode"] = @(self.pubgStealthMode);
+    _prefsCache[@"usePUBGSpecialMode"] = @(self.usePUBGSpecialMode);
+    _prefsCache[@"useMetalHooks"] = @(self.useMetalHooks);
+    _prefsCache[@"useQuartzCoreAPI"] = @(self.useQuartzCoreAPI);
+    _prefsCache[@"pubgRefreshRate"] = @(self.pubgRefreshRate);
+    
     // Write to file
     [_prefsCache writeToFile:kPrefPath atomically:YES];
     
@@ -151,7 +171,7 @@
 
 #pragma mark - Color Utilities
 
-- (UIColor *)colorWithHexString:(NSString *)hexString {
+- (UIColor *)colorFromHexString:(NSString *)hexString {
     unsigned rgbValue = 0;
     NSScanner *scanner = [NSScanner scannerWithString:hexString];
     [scanner setScanLocation:1]; // Skip '#' character

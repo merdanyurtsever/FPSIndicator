@@ -1,11 +1,13 @@
 # FPSIndicator (Revamped)
 
-A lightweight, non-intrusive FPS counter for iOS that works system-wide with a simplified, efficient architecture.
+A lightweight, non-intrusive FPS counter for iOS that works system-wide with a simplified, efficient architecture. Now with special support for PUBG Mobile that avoids anti-cheat detection.
 
 ## Features
 
 - **Accurate FPS monitoring** - See your frame rate in real-time across all apps and games
 - **Direct display sync** - Uses CADisplayLink for precise frame timing
+- **PUBG Mobile support** - Special stealth mode for PUBG Mobile that avoids anti-cheat detection
+- **Anti-cheat evasion** - Multiple stealth levels to minimize detection risk
 - **Drag-to-position** - Easily position the indicator anywhere on screen with a simple drag gesture
 - **Appearance customization** - Color coding, opacity, and size options
 - **Privacy mode** - Automatically hide the indicator in sensitive apps
@@ -26,6 +28,20 @@ After installation, a small FPS counter will appear in the top corner of your sc
 - **Drag** the counter to reposition it anywhere on screen
 - **Configure** the indicator in Settings app → FPSIndicator
 
+### PUBG Mobile Usage
+
+For PUBG Mobile, the tweak automatically uses a special stealth mode that:
+
+1. Uses a CALayer-based overlay instead of UIWindow
+2. Initializes after a delay to avoid anti-cheat detection
+3. Updates at a lower frequency to minimize visibility to anti-cheat
+4. Optionally uses the QuartzCore debug API with appropriate entitlements
+
+You can configure the stealth level in settings:
+- **Normal**: Standard hooks (not recommended)
+- **Medium**: Delayed initialization with minimal hooks
+- **Maximum**: Extreme caution mode with minimal footprint
+
 ## Technical Details
 
 FPSIndicator uses a streamlined architecture:
@@ -33,6 +49,8 @@ FPSIndicator uses a streamlined architecture:
 - **FPSCounter** - Uses CADisplayLink for accurate frame counting with statistical smoothing
 - **FPSDisplay** - Provides a lightweight, draggable overlay with color coding
 - **FPSPreferences** - Centralizes preference management with a single source of truth
+- **FPSPUBGSupport** - Specialized handling for PUBG Mobile with anti-cheat evasion
+- **FPSAlternativeOverlay** - CALayer-based overlay for stealthy display in games
 
 ## Privacy Mode
 
@@ -68,7 +86,22 @@ If the FPS indicator is not appearing:
 2. Try toggling the tweak off and on in Settings
 3. Respring your device
 
+### PUBG Mobile issues
+
+If you experience issues with PUBG Mobile:
+
+1. Try increasing the stealth level in settings
+2. Lower the refresh rate to minimize detection
+3. In extreme cases, enable the "Use QuartzCore Debug API" option (requires appropriate entitlements)
+
 ## Changelog
+
+### v2.1.0
+- Added specialized PUBG Mobile support with anti-cheat evasion
+- Implemented multiple stealth levels for game compatibility
+- Added CALayer-based alternative overlay for games
+- Optional QuartzCore debug API support for accurate system FPS
+- Added PUBG-specific settings in preferences
 
 ### v2.0.0
 - Complete architectural revamp for reliability and performance
