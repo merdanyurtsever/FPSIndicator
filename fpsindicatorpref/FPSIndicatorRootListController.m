@@ -116,6 +116,125 @@
     [self presentViewController:alert animated:YES completion:nil];
 }
 
+#pragma mark - Log File Management
+
+- (void)viewLogFiles {
+    // Load our log viewer class dynamically
+    Class logViewerClass = NSClassFromString(@"FPSLogViewer");
+    
+    if (!logViewerClass) {
+        UIAlertController *alert = [UIAlertController 
+                                   alertControllerWithTitle:@"Not Available" 
+                                   message:@"Log viewer is not available. Make sure you're using the latest version of FPSIndicator." 
+                                   preferredStyle:UIAlertControllerStyleAlert];
+        
+        [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
+        [self presentViewController:alert animated:YES completion:nil];
+        return;
+    }
+    
+    // Get the log directory path method
+    SEL logDirSel = NSSelectorFromString(@"logDirectoryPath");
+    if (![logViewerClass respondsToSelector:logDirSel]) {
+        UIAlertController *alert = [UIAlertController 
+                                   alertControllerWithTitle:@"Error" 
+                                   message:@"Cannot access log directory. Please update to the latest version." 
+                                   preferredStyle:UIAlertControllerStyleAlert];
+        
+        [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
+        [self presentViewController:alert animated:YES completion:nil];
+        return;
+    }
+    
+    // Get log files using the allLogFilePaths method
+    SEL allLogsSel = NSSelectorFromString(@"allLogFilePaths");
+    if (![logViewerClass respondsToSelector:allLogsSel]) {
+        UIAlertController *alert = [UIAlertController 
+                                   alertControllerWithTitle:@"Error" 
+                                   message:@"Cannot list log files. Please update to the latest version." 
+                                   preferredStyle:UIAlertControllerStyleAlert];
+        
+        [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
+        [self presentViewController:alert animated:YES completion:nil];
+        return;
+    }
+    
+    // Suppress performSelector leak warning
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+    NSArray *logFiles = [logViewerClass performSelector:allLogsSel];
+    #pragma clang diagnostic pop
+    
+    if (!logFiles || logFiles.count == 0) {
+        UIAlertController *alert = [UIAlertController 
+                                   alertControllerWithTitle:@"No Log Files" 
+                                   message:@"No FPS log files have been created yet. Use the Log File mode in PUBG Mobile to create log files." 
+                                   preferredStyle:UIAlertControllerStyleAlert];
+        
+        [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
+        [self presentViewController:alert animated:YES completion:nil];
+        return;
+    }
+    
+    // Create a file list using UIAlertController
+    UIAlertController *fileList = [UIAlertController 
+                                  alertControllerWithTitle:@"FPS Log Files" 
+                                  message:@"Select a log file to view:" 
+                                  preferredStyle:UIAlertControllerStyleActionSheet];
+    
+    // Add an action for each log file
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+    [formatter setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
+    
+    for (NSString *logPath in logFiles) {
+        // Get file attributes to show the date
+        NSDictionary *attrs = [fileManager attributesOfItemAtPath:logPath error:nil];
+        NSDate *modDate = attrs[NSFileModificationDate];
+        
+        // Format the date and get the filename
+        NSString *dateStr = [formatter stringFromDate:modDate];
+        NSString *fileName = [logPath lastPathComponent];
+        
+        // Create an action for this file
+        NSString *actionTitle = [NSString stringWithFormat:@"%@ (%@)", fileName, dateStr];
+        [fileList addAction:[UIAlertAction actionWithTitle:actionTitle 
+                                               style:UIAlertActionStyleDefault 
+                                             handler:^(UIAlertAction * _Nonnull action) {
+            // Use our notification approach to open the file
+            NSString *encodedPath = [logPath stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+            
+            // Store the path for the notification handler to use
+            [[NSUserDefaults standardUserDefaults] setObject:encodedPath forKey:@"com.fpsindicator.lastLogPath"];
+            [[NSUserDefaults standardUserDefaults] synchronize];
+            
+            // Post a Darwin notification
+            CFNotificationCenterPostNotification(
+                CFNotificationCenterGetDarwinNotifyCenter(),
+                CFSTR("com.fpsindicator/openLogFile"),
+                NULL,
+                NULL,
+                YES
+            );
+        }]];
+    }
+    
+    // Add a cancel action
+    [fileList addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+    
+    // Handle iPad presentation
+    if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad) {
+        fileList.popoverPresentationController.sourceView = self.view;
+        fileList.popoverPresentationController.sourceRect = CGRectMake(self.view.bounds.size.width / 2, 
+                                                                      self.view.bounds.size.height / 2, 
+                                                                      0, 0);
+        fileList.popoverPresentationController.permittedArrowDirections = 0;
+    }
+    
+    // Present the alert
+    [self presentViewController:fileList animated:YES completion:nil];
+}
+
 @end
 
 #pragma mark - FPSAppSelectionController Implementation

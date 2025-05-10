@@ -68,6 +68,31 @@
 - (void)forceLogWithFPS:(double)fps;
 
 /**
+ * Returns the directory where FPS logs are stored
+ * @return The full path to the log directory
+ */
+- (NSString *)logDirectoryPath;
+
+/**
+ * Returns a list of all log files in the log directory
+ * @return An array of file paths for all log files
+ */
+- (NSArray<NSString *> *)allLogFilePaths;
+
+/**
+ * Returns the contents of a specific log file
+ * @param logFilePath The full path to the log file
+ * @return The contents of the log file as a string
+ */
+- (NSString *)contentsOfLogFile:(NSString *)logFilePath;
+
+/**
+ * Returns the contents of the most recent log file
+ * @return The contents of the most recent log file as a string, or nil if no log files exist
+ */
+- (NSString *)contentsOfMostRecentLogFile;
+
+/**
  * Singleton accessor
  * @return The shared instance
  */

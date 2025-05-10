@@ -17,6 +17,7 @@ FPSIndicator_FILES = Tweak.xm \
 	Sources/FPSAlternativeOverlay.m \
 	Sources/FPSPUBGSupport.m \
 	Sources/FPSPUBGUIIntegration.m \
+	Sources/FPSLogViewer.m \
 	Sources/FPSThermalMonitor.m \
 	Sources/FPSGraphView.m
 

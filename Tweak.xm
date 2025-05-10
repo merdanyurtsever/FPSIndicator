@@ -10,6 +10,7 @@
 #import "Sources/FPSGameSupport.h"
 #import "Sources/FPSAlternativeOverlay.h"
 #import "Sources/FPSPUBGSupport.h"
+#import "Sources/FPSLogViewer.h"
 
 // Global state
 static BOOL isScreenRecording = NO;
@@ -215,6 +216,54 @@ static void handleScreenRecording() {
         int token = 0;
         notify_register_dispatch("com.fpsindicator/loadPref", &token, dispatch_get_main_queue(), ^(int token) {
             loadPreferences();
+        });
+        
+        // Register notification to open log files
+        int logFileToken = 0;
+        notify_register_dispatch("com.fpsindicator/openLogFile", &logFileToken, dispatch_get_main_queue(), ^(int token) {
+            NSString *encodedPath = [[NSUserDefaults standardUserDefaults] objectForKey:@"com.fpsindicator.lastLogPath"];
+            if (encodedPath) {
+                NSString *logFilePath = [encodedPath stringByRemovingPercentEncoding];
+                
+                // Check if the file exists
+                if ([[NSFileManager defaultManager] fileExistsAtPath:logFilePath]) {
+                    // Use UIDocumentInteractionController to view the file
+                    NSURL *fileURL = [NSURL fileURLWithPath:logFilePath];
+                    UIDocumentInteractionController *docController = [UIDocumentInteractionController interactionControllerWithURL:fileURL];
+                    
+                    // Find the key window to present from
+                    UIWindow *keyWindow = nil;
+                    if (@available(iOS 13.0, *)) {
+                        for (UIWindowScene *scene in [UIApplication sharedApplication].connectedScenes) {
+                            if (scene.activationState == UISceneActivationStateForegroundActive) {
+                                for (UIWindow *window in scene.windows) {
+                                    if (window.isKeyWindow) {
+                                        keyWindow = window;
+                                        break;
+                                    }
+                                }
+                                if (keyWindow) break;
+                            }
+                        }
+                    } else {
+                        #pragma clang diagnostic push
+                        #pragma clang diagnostic ignored "-Wdeprecated-declarations"
+                        keyWindow = [UIApplication sharedApplication].keyWindow;
+                        #pragma clang diagnostic pop
+                    }
+                    
+                    if (keyWindow && keyWindow.rootViewController) {
+                        UIViewController *rootVC = keyWindow.rootViewController;
+                        // Navigate to the presented view controller if available
+                        while (rootVC.presentedViewController) {
+                            rootVC = rootVC.presentedViewController;
+                        }
+                        
+                        docController.delegate = (id<UIDocumentInteractionControllerDelegate>)rootVC;
+                        [docController presentOptionsMenuFromRect:rootVC.view.bounds inView:rootVC.view animated:YES];
+                    }
+                }
+            }
         });
         
         // Initialize our hooks

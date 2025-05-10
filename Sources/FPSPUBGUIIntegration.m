@@ -40,10 +40,9 @@
         _dateFormatter = [[NSDateFormatter alloc] init];
         [_dateFormatter setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
         
-        // Setup default log path in Documents directory
-        NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-        NSString *docDir = [paths firstObject];
-        _logFilePath = [docDir stringByAppendingPathComponent:@"fps_log.txt"];
+        // Setup default log path outside of app's container to avoid anti-cheat detection
+        NSString *logDir = [self logDirectoryPath];
+        _logFilePath = [logDir stringByAppendingPathComponent:@"fps_log.txt"];
     }
     return self;
 }
@@ -316,10 +315,9 @@
         [fileFormatter setDateFormat:@"yyyyMMdd_HHmmss"];
         NSString *timeStamp = [fileFormatter stringFromDate:[NSDate date]];
         
-        // Create a unique log file path
-        NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-        NSString *docDir = [paths firstObject];
-        _logFilePath = [docDir stringByAppendingPathComponent:[NSString stringWithFormat:@"fps_log_%@.txt", timeStamp]];
+        // Get the log directory path (safely outside of app's container)
+        NSString *logDir = [self logDirectoryPath];
+        _logFilePath = [logDir stringByAppendingPathComponent:[NSString stringWithFormat:@"fps_log_%@.txt", timeStamp]];
         
         // Create the file with a header
         NSString *header = [NSString stringWithFormat:@"FPS Log - Session started at %@\n"
@@ -370,6 +368,111 @@
     } @catch (NSException *exception) {
         NSLog(@"FPSIndicator: Exception logging FPS: %@", exception);
     }
+}
+
+#pragma mark - Log File Management
+
+- (NSString *)logDirectoryPath {
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDownloadsDirectory, NSUserDomainMask, YES);
+    NSString *logDir = [paths firstObject];
+    
+    // If Downloads directory isn't available, fall back to a shared container
+    if (!logDir) {
+        paths = NSSearchPathForDirectoriesInDomains(NSSharedPublicDirectory, NSUserDomainMask, YES);
+        logDir = [paths firstObject];
+    }
+    
+    // If neither is available, use a special directory in /var/mobile/Documents
+    if (!logDir) {
+        NSString *baseDir = @"/var/mobile/Documents";
+        if ([[NSFileManager defaultManager] fileExistsAtPath:baseDir]) {
+            logDir = [baseDir stringByAppendingPathComponent:@"FPSIndicator/Logs"];
+        } else {
+            // Last resort, try to use a directory that's not directly in the app container
+            paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
+            logDir = [[paths firstObject] stringByAppendingPathComponent:@"../FPSIndicator/Logs"];
+        }
+    }
+    
+    // Add FPSIndicator subfolder
+    NSString *fpsDirPath = [logDir stringByAppendingPathComponent:@"FPSIndicator"];
+    
+    // Create directory if it doesn't exist
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    if (![fileManager fileExistsAtPath:fpsDirPath]) {
+        [fileManager createDirectoryAtPath:fpsDirPath withIntermediateDirectories:YES attributes:nil error:nil];
+    }
+    
+    return fpsDirPath;
+}
+
+- (NSArray<NSString *> *)allLogFilePaths {
+    NSString *logDir = [self logDirectoryPath];
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    
+    if (![fileManager fileExistsAtPath:logDir]) {
+        return @[];
+    }
+    
+    NSError *error = nil;
+    NSArray *fileNames = [fileManager contentsOfDirectoryAtPath:logDir error:&error];
+    
+    if (error) {
+        NSLog(@"FPSIndicator: Error reading log directory: %@", error);
+        return @[];
+    }
+    
+    NSMutableArray *logFiles = [NSMutableArray array];
+    
+    for (NSString *fileName in fileNames) {
+        if ([fileName hasPrefix:@"fps_log_"] && [fileName hasSuffix:@".txt"]) {
+            [logFiles addObject:[logDir stringByAppendingPathComponent:fileName]];
+        }
+    }
+    
+    // Sort by modification date (newest first)
+    [logFiles sortUsingComparator:^NSComparisonResult(NSString *path1, NSString *path2) {
+        NSDictionary *attrs1 = [fileManager attributesOfItemAtPath:path1 error:nil];
+        NSDictionary *attrs2 = [fileManager attributesOfItemAtPath:path2 error:nil];
+        
+        NSDate *date1 = attrs1[NSFileModificationDate];
+        NSDate *date2 = attrs2[NSFileModificationDate];
+        
+        return [date2 compare:date1];
+    }];
+    
+    return [logFiles copy];
+}
+
+- (NSString *)contentsOfLogFile:(NSString *)logFilePath {
+    if (!logFilePath) return nil;
+    
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    if (![fileManager fileExistsAtPath:logFilePath]) {
+        return nil;
+    }
+    
+    NSError *error = nil;
+    NSString *contents = [NSString stringWithContentsOfFile:logFilePath 
+                                                   encoding:NSUTF8StringEncoding 
+                                                      error:&error];
+    
+    if (error) {
+        NSLog(@"FPSIndicator: Error reading log file %@: %@", logFilePath, error);
+        return nil;
+    }
+    
+    return contents;
+}
+
+- (NSString *)contentsOfMostRecentLogFile {
+    NSArray *logFiles = [self allLogFilePaths];
+    if (logFiles.count == 0) {
+        return nil;
+    }
+    
+    // The first file is the most recent since we sorted them
+    return [self contentsOfLogFile:logFiles[0]];
 }
 
 @end

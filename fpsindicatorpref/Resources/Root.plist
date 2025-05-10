@@ -51,7 +51,9 @@
 			<key>label</key>
 			<string>PUBG Mobile Settings</string>
 			<key>footerText</key>
-			<string>These settings help avoid anti-cheat detection in PUBG Mobile games. Changing these settings requires a restart of PUBG Mobile to take effect.</string>
+			<string>These settings help avoid anti-cheat detection in PUBG Mobile games. Changing these settings requires a restart of PUBG Mobile to take effect.
+
+When using Log File mode, FPS data is saved to /var/mobile/Documents/FPSIndicator/Logs/ to avoid detection by anti-cheat systems.</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -224,6 +226,24 @@
 			</array>
 			<key>PostNotification</key>
 			<string>com.fpsindicator/loadPref</string>
+		</dict>
+		
+		<!-- Log File Management -->
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Log Files</string>
+			<key>footerText</key>
+			<string>View and share FPS log files created when using the Log File UI integration mode in PUBG Mobile.</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>label</key>
+			<string>View Log Files</string>
+			<key>action</key>
+			<string>viewLogFiles</string>
 		</dict>
 		
 		<!-- Footer Section -->
