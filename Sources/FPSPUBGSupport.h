@@ -48,6 +48,22 @@
 - (void)stopMonitoring;
 
 /**
+ * Sets up a safer implementation of medium stealth mode
+ * This is specifically designed to avoid crashes in PUBG Mobile
+ */
+- (void)setupSafeMediumStealth;
+
+/**
+ * Callback used by the safe medium stealth mode
+ */
+- (void)safeMediumStealthCallback:(CADisplayLink *)link;
+
+/**
+ * Fallback to timer-based monitoring when other methods fail
+ */
+- (void)fallbackToTimer;
+
+/**
  * Gets the current FPS using whichever method is active
  * @return The current frames per second
  */

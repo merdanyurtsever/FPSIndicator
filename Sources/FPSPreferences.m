@@ -193,4 +193,17 @@
             (int)(b * 255)];
 }
 
+#pragma mark - Accessor Methods
+
+// Accessor for PUBG refresh rate
+- (CGFloat)refreshRate {
+    // Return the PUBG refresh rate or a reasonable default
+    return self.pubgRefreshRate > 0 ? self.pubgRefreshRate : 2.0;
+}
+
+// Accessor for QuartzCore debug API usage
+- (BOOL)useQuartzDebug {
+    return self.useQuartzCoreAPI;
+}
+
 @end

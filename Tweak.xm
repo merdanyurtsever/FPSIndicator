@@ -36,8 +36,47 @@ static void loadPreferences() {
         if (isPUBGMobile && shouldDisplay) {
             // Use PUBG-specific strategy
             usedAlternativeMethod = YES;
-            [[FPSPUBGSupport sharedInstance] initialize];
-            [[FPSDisplay sharedInstance] setVisible:NO]; // Hide standard display
+            
+            @try {
+                // Configure PUBG Support with correct stealth mode
+                [[FPSPUBGSupport sharedInstance] setStealthMode:[[FPSPreferences sharedPreferences] pubgStealthMode]];
+                [[FPSPUBGSupport sharedInstance] setRefreshRate:[[FPSPreferences sharedPreferences] refreshRate]];
+                [[FPSPUBGSupport sharedInstance] setUseQuartzCoreDebug:[[FPSPreferences sharedPreferences] useQuartzDebug]];
+                
+                // Initialize with safeguards
+                dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+                    @try {
+                        [[FPSPUBGSupport sharedInstance] initialize];
+                        [[FPSDisplay sharedInstance] setVisible:NO]; // Hide standard display
+                    } @catch (NSException *exception) {
+                        NSLog(@"FPSIndicator: Exception initializing PUBG support: %@", exception);
+                        
+                        // Try to fall back to maximum stealth mode if medium crashes
+                        if ([[FPSPreferences sharedPreferences] pubgStealthMode] == 1) {
+                            NSLog(@"FPSIndicator: Falling back to maximum stealth mode");
+                            [[FPSPUBGSupport sharedInstance] setStealthMode:2]; // Use maximum stealth
+                            
+                            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), 
+                                          dispatch_get_main_queue(), ^{
+                                @try {
+                                    [[FPSPUBGSupport sharedInstance] initialize];
+                                } @catch (NSException *innerException) {
+                                    NSLog(@"FPSIndicator: Fallback also failed: %@", innerException);
+                                    // Fall back to normal display if PUBG support fails completely
+                                    [[FPSDisplay sharedInstance] setVisible:shouldDisplay];
+                                }
+                            });
+                        } else {
+                            // Fall back to normal display if PUBG support fails
+                            [[FPSDisplay sharedInstance] setVisible:shouldDisplay];
+                        }
+                    }
+                });
+            } @catch (NSException *exception) {
+                NSLog(@"FPSIndicator: Critical exception in PUBG support setup: %@", exception);
+                // Fall back to normal display if PUBG support fails
+                [[FPSDisplay sharedInstance] setVisible:shouldDisplay];
+            }
         } else {
             // Use normal strategy
             [[FPSDisplay sharedInstance] setVisible:shouldDisplay];
@@ -80,9 +119,38 @@ static void handleScreenRecording() {
         if (isPUBGMobile) {
             NSLog(@"FPSIndicator: Detected PUBG Mobile, using specialized anti-cheat evasion");
             usedAlternativeMethod = YES;
-            // Start with a delay to avoid anti-cheat detection
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-                [[FPSPUBGSupport sharedInstance] initialize];
+            
+            // Configure PUBG Support with correct stealth mode first
+            [[FPSPUBGSupport sharedInstance] setStealthMode:[[FPSPreferences sharedPreferences] pubgStealthMode]];
+            [[FPSPUBGSupport sharedInstance] setRefreshRate:[[FPSPreferences sharedPreferences] refreshRate]];
+            [[FPSPUBGSupport sharedInstance] setUseQuartzCoreDebug:[[FPSPreferences sharedPreferences] useQuartzDebug]];
+            
+            // Start with a longer delay to avoid anti-cheat detection
+            // Different delay based on stealth mode
+            NSInteger delaySeconds = ([[FPSPUBGSupport sharedInstance] stealthMode] == 2) ? 5 : 3;
+            
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delaySeconds * NSEC_PER_SEC)), 
+                          dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+                @try {
+                    [[FPSPUBGSupport sharedInstance] initialize];
+                } @catch (NSException *exception) {
+                    NSLog(@"FPSIndicator: Failed to initialize PUBG support: %@", exception);
+                    
+                    // Try to fall back to maximum stealth mode if medium crashes
+                    if ([[FPSPreferences sharedPreferences] pubgStealthMode] == 1) {
+                        NSLog(@"FPSIndicator: Falling back to maximum stealth mode");
+                        [[FPSPUBGSupport sharedInstance] setStealthMode:2]; // Use maximum stealth
+                        
+                        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), 
+                                      dispatch_get_main_queue(), ^{
+                            @try {
+                                [[FPSPUBGSupport sharedInstance] initialize];
+                            } @catch (NSException *innerException) {
+                                NSLog(@"FPSIndicator: Fallback also failed: %@", innerException);
+                            }
+                        });
+                    }
+                }
             });
         } else {
             // Standard initialization for normal apps

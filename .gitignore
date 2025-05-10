@@ -4,3 +4,7 @@ packages/
 AppIcons/
 ._*
 note*
+compile_output.txt
+compile_output2.txt
+full_error.txt
+full_error2.txt

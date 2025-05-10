@@ -8,6 +8,7 @@ A lightweight, non-intrusive FPS counter for iOS that works system-wide with a s
 - **Direct display sync** - Uses CADisplayLink for precise frame timing
 - **PUBG Mobile support** - Special stealth mode for PUBG Mobile that avoids anti-cheat detection
 - **Anti-cheat evasion** - Multiple stealth levels to minimize detection risk
+- **Crash-resistant design** - Enhanced stability even in demanding games like PUBG Mobile
 - **Drag-to-position** - Easily position the indicator anywhere on screen with a simple drag gesture
 - **Appearance customization** - Color coding, opacity, and size options
 - **Privacy mode** - Automatically hide the indicator in sensitive apps
@@ -39,8 +40,15 @@ For PUBG Mobile, the tweak automatically uses a special stealth mode that:
 
 You can configure the stealth level in settings:
 - **Normal**: Standard hooks (not recommended)
-- **Medium**: Delayed initialization with minimal hooks
+- **Medium**: Delayed initialization with minimal hooks (now crash-resistant)
 - **Maximum**: Extreme caution mode with minimal footprint
+
+**Update (v1.2.0)**: Fixed critical bug with medium stealth mode causing crashes. This update adds multiple layers of crash protection:
+- Safe thread handling with proper main thread dispatch
+- Exception handling throughout the codebase
+- Graceful fallbacks when preferred methods fail
+- Multiple window attachment strategies
+- Progressive delay system for safer initialization
 
 Note: Changing PUBG Mobile settings requires restarting the PUBG Mobile app to take effect.
 

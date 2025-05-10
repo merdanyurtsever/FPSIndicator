@@ -32,6 +32,8 @@
 - (void)savePreferences;
 - (BOOL)shouldDisplayInApp:(NSString *)bundleID;
 - (BOOL)isPrivacyModeEnabledForApp:(NSString *)bundleID;
+- (CGFloat)refreshRate; // Alias for pubgRefreshRate
+- (BOOL)useQuartzDebug; // Alias for useQuartzCoreAPI
 
 // Utility methods
 - (UIColor *)colorFromHexString:(NSString *)hexString;

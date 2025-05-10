@@ -1,7 +1,7 @@
 Package: com.fpsindicator
 Name: FPSIndicator
 Depends: firmware (>= 12.0)
-Version: 2.1.0
+Version: 2.1.1
 Architecture: iphoneos-arm64
 Description: Lightweight FPS indicator with anti-cheat evasion for PUBG Mobile, using CADisplayLink or QuartzCore debug APIs
 Maintainer: Anonymous
