@@ -22,6 +22,7 @@
 
 // PUBG Mobile specific settings
 @property (nonatomic, assign) NSInteger pubgStealthMode;
+@property (nonatomic, assign) NSInteger pubgUiMode;
 @property (nonatomic, assign) BOOL usePUBGSpecialMode;
 @property (nonatomic, assign) BOOL useMetalHooks;
 @property (nonatomic, assign) BOOL useQuartzCoreAPI;

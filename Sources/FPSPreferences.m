@@ -71,6 +71,7 @@
     
     // PUBG Mobile specific settings
     _pubgStealthMode = prefs[@"pubgStealthMode"] ? [prefs[@"pubgStealthMode"] integerValue] : 1;
+    _pubgUiMode = prefs[@"pubgUiMode"] ? [prefs[@"pubgUiMode"] integerValue] : 0;
     _usePUBGSpecialMode = prefs[@"usePUBGSpecialMode"] ? [prefs[@"usePUBGSpecialMode"] boolValue] : YES;
     _useMetalHooks = prefs[@"useMetalHooks"] ? [prefs[@"useMetalHooks"] boolValue] : NO;
     _useQuartzCoreAPI = prefs[@"useQuartzCoreAPI"] ? [prefs[@"useQuartzCoreAPI"] boolValue] : NO;
@@ -82,6 +83,7 @@
         id sharedInstance = [pubgSupportClass performSelector:@selector(sharedInstance)];
         if (sharedInstance) {
             [sharedInstance setValue:@(_pubgStealthMode) forKey:@"stealthMode"];
+            [sharedInstance setValue:@(_pubgUiMode) forKey:@"pubgUiMode"];
             [sharedInstance setValue:@(_useQuartzCoreAPI) forKey:@"useQuartzCoreDebug"];
             [sharedInstance setValue:@(_pubgRefreshRate) forKey:@"refreshRate"];
         }
@@ -139,6 +141,7 @@
     
     // Save PUBG Mobile specific settings
     _prefsCache[@"pubgStealthMode"] = @(self.pubgStealthMode);
+    _prefsCache[@"pubgUiMode"] = @(self.pubgUiMode);
     _prefsCache[@"usePUBGSpecialMode"] = @(self.usePUBGSpecialMode);
     _prefsCache[@"useMetalHooks"] = @(self.useMetalHooks);
     _prefsCache[@"useQuartzCoreAPI"] = @(self.useQuartzCoreAPI);
@@ -204,6 +207,12 @@
 // Accessor for QuartzCore debug API usage
 - (BOOL)useQuartzDebug {
     return self.useQuartzCoreAPI;
+}
+
+// Accessor for PUBG UI Mode
+- (NSInteger)pubgUiMode {
+    // If not explicitly set, return 0 (standard display)
+    return _pubgUiMode;
 }
 
 @end

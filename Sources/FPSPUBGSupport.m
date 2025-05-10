@@ -1,5 +1,6 @@
 #import "FPSPUBGSupport.h"
 #import "FPSAlternativeOverlay.h"
+#import "FPSPUBGUIIntegration.h"
 #import <dlfcn.h>
 #import <mach/mach_time.h>
 #import <objc/runtime.h>
@@ -50,6 +51,7 @@ static CARenderServerGetDebugValueFuncPtr CARenderServerGetDebugValue = NULL;
         
         // Default settings
         _stealthMode = 1; // Medium stealth by default
+        _pubgUiMode = 0; // Standard display by default
         _useQuartzCoreDebug = NO; // Off by default, requires special entitlements
         _refreshRate = 2.0; // 2Hz refresh rate by default for PUBG
     }
@@ -83,6 +85,12 @@ static CARenderServerGetDebugValueFuncPtr CARenderServerGetDebugValue = NULL;
             [self tryLoadQuartzCoreDebugAPI];
         }
         
+        // Setup the UI integration based on pubgUiMode
+        if (_pubgUiMode > 0) {
+            NSLog(@"FPSIndicator: Initializing PUBG UI integration with mode %ld", (long)_pubgUiMode);
+            [[FPSPUBGUIIntegration sharedInstance] initializeWithMode:_pubgUiMode];
+        }
+        
         // Create a delayed setup to avoid early detection
         // Anti-cheat often scans early in the app lifecycle
         CGFloat delay = (_stealthMode == 2) ? 10.0 : 5.0;
@@ -108,6 +116,11 @@ static CARenderServerGetDebugValueFuncPtr CARenderServerGetDebugValue = NULL;
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3.0 * NSEC_PER_SEC)), 
                           dispatch_get_main_queue(), ^{
                 [self setupSafeMediumStealth];
+                
+                // Start the UI integration if applicable
+                if (self->_pubgUiMode > 0) {
+                    [[FPSPUBGUIIntegration sharedInstance] startDisplayingWithInitialFPS:0.0];
+                }
             });
             return;
         }
@@ -130,12 +143,22 @@ static CARenderServerGetDebugValueFuncPtr CARenderServerGetDebugValue = NULL;
                 [self setupMaximumStealthMonitoring]; // Default to maximum stealth
                 break;
         }
+        
+        // Start the UI integration if applicable
+        if (_pubgUiMode > 0) {
+            [[FPSPUBGUIIntegration sharedInstance] startDisplayingWithInitialFPS:0.0];
+        }
     } @catch (NSException *exception) {
         NSLog(@"FPSIndicator: Exception during PUBG delayed setup: %@", exception);
         
         // Fall back to maximum stealth mode if any other mode causes issues
         @try {
             [self setupMaximumStealthMonitoring];
+            
+            // Still try to start UI integration in fallback mode
+            if (_pubgUiMode > 0) {
+                [[FPSPUBGUIIntegration sharedInstance] startDisplayingWithInitialFPS:0.0];
+            }
         } @catch (NSException *innerException) {
             NSLog(@"FPSIndicator: Failed to fall back to maximum stealth mode: %@", innerException);
         }
@@ -276,14 +299,20 @@ static CARenderServerGetDebugValueFuncPtr CARenderServerGetDebugValue = NULL;
             
             _currentFPS = fps;
             
-            // Use a safer way to update the UI
-            dispatch_async(dispatch_get_main_queue(), ^{
-                @try {
-                    [[FPSAlternativeOverlay sharedInstance] showWithFPS:self->_currentFPS];
-                } @catch (NSException *exception) {
-                    NSLog(@"FPSIndicator: Exception updating UI: %@", exception);
-                }
-            });
+            // Update UI based on selected mode
+            if (_pubgUiMode > 0) {
+                // Use our new UI integration approach
+                [[FPSPUBGUIIntegration sharedInstance] updateWithFPS:_currentFPS];
+            } else {
+                // Use the traditional approach
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    @try {
+                        [[FPSAlternativeOverlay sharedInstance] showWithFPS:self->_currentFPS];
+                    } @catch (NSException *exception) {
+                        NSLog(@"FPSIndicator: Exception updating UI: %@", exception);
+                    }
+                });
+            }
         }
     } @catch (NSException *exception) {
         NSLog(@"FPSIndicator: Exception in safe callback: %@", exception);
@@ -301,6 +330,11 @@ static CARenderServerGetDebugValueFuncPtr CARenderServerGetDebugValue = NULL;
     
     if (_hooked) {
         [self removeMetalHooks];
+    }
+    
+    // Stop the UI integration if applicable
+    if (_pubgUiMode > 0) {
+        [[FPSPUBGUIIntegration sharedInstance] stopDisplaying];
     }
 }
 
@@ -473,10 +507,16 @@ static CARenderServerGetDebugValueFuncPtr CARenderServerGetDebugValue = NULL;
             _currentFPS = [self getFPSFromQuartzCore];
         }
         
-        // Always update the display on the main thread to prevent crashes
-        dispatch_async(dispatch_get_main_queue(), ^{
-            [[FPSAlternativeOverlay sharedInstance] showWithFPS:self->_currentFPS];
-        });
+        // Update UI based on the selected mode
+        if (_pubgUiMode > 0) {
+            // Use our new UI integration approach
+            [[FPSPUBGUIIntegration sharedInstance] updateWithFPS:_currentFPS];
+        } else {
+            // Use the traditional approach
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [[FPSAlternativeOverlay sharedInstance] showWithFPS:self->_currentFPS];
+            });
+        }
     }
 }
 
@@ -519,10 +559,16 @@ static CARenderServerGetDebugValueFuncPtr CARenderServerGetDebugValue = NULL;
         
         _currentFPS = smoothedFPS;
         
-        // Update the display on the main thread
-        dispatch_async(dispatch_get_main_queue(), ^{
-            [[FPSAlternativeOverlay sharedInstance] showWithFPS:self->_currentFPS];
-        });
+        // Update UI based on selected mode
+        if (_pubgUiMode > 0) {
+            // Use our new UI integration approach
+            [[FPSPUBGUIIntegration sharedInstance] updateWithFPS:_currentFPS];
+        } else {
+            // Use the traditional approach
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [[FPSAlternativeOverlay sharedInstance] showWithFPS:self->_currentFPS];
+            });
+        }
     } @catch (NSException *exception) {
         NSLog(@"FPSIndicator: Exception in backgroundTimerFired: %@", exception);
     }

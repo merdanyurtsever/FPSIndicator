@@ -19,6 +19,14 @@
 @property (nonatomic, assign) NSInteger stealthMode;
 
 /**
+ * @property pubgUiMode PUBG UI integration mode
+ * 0 = Standard display (may be detected by anti-cheat)
+ * 1 = Modify fire button (blend in with game UI)
+ * 2 = Log to file (completely invisible, no UI)
+ */
+@property (nonatomic, assign) NSInteger pubgUiMode;
+
+/**
  * @property useQuartzCoreDebug Whether to use the QuartzCore debug APIs
  * when available (requires jailbreak with appropriate entitlements)
  */
