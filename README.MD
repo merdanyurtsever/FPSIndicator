@@ -42,6 +42,8 @@ You can configure the stealth level in settings:
 - **Medium**: Delayed initialization with minimal hooks
 - **Maximum**: Extreme caution mode with minimal footprint
 
+Note: Changing PUBG Mobile settings requires restarting the PUBG Mobile app to take effect.
+
 ## Technical Details
 
 FPSIndicator uses a streamlined architecture:

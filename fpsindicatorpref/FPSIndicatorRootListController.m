@@ -44,6 +44,19 @@
             [self showRespringAlert];
         }
     }
+    
+    // Check if this setting requires PUBG Mobile to be restarted
+    if (([specifier.properties[@"key"] isEqualToString:@"pubgStealthMode"] || 
+         [specifier.properties[@"key"] isEqualToString:@"usePUBGSpecialMode"] ||
+         [specifier.properties[@"key"] isEqualToString:@"useQuartzCoreAPI"]) && 
+        [specifier.properties[@"requiresRestart"] boolValue]) {
+        
+        // Check if the value actually changed
+        id previousValue = [self.previousValue objectForKey:specifier.properties[@"key"]];
+        if (previousValue && ![value isEqual:previousValue]) {
+            [self showPUBGRestartAlert];
+        }
+    }
 }
 
 - (void)viewDidLoad {
@@ -88,6 +101,19 @@
 - (void)selectApps {
     FPSAppSelectionController *appSelector = [[FPSAppSelectionController alloc] init];
     [self.navigationController pushViewController:appSelector animated:YES];
+}
+
+- (void)showPUBGRestartAlert {
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"PUBG Mobile Restart Required"
+                                                                   message:@"Changes to PUBG Mobile security settings require you to restart PUBG Mobile to take effect."
+                                                            preferredStyle:UIAlertControllerStyleAlert];
+    
+    UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"OK"
+                                                       style:UIAlertActionStyleDefault
+                                                     handler:nil];
+    
+    [alert addAction:okAction];
+    [self presentViewController:alert animated:YES completion:nil];
 }
 
 @end

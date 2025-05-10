@@ -51,7 +51,7 @@
 			<key>label</key>
 			<string>PUBG Mobile Settings</string>
 			<key>footerText</key>
-			<string>These settings help avoid anti-cheat detection in PUBG Mobile games</string>
+			<string>These settings help avoid anti-cheat detection in PUBG Mobile games. Changing these settings requires a restart of PUBG Mobile to take effect.</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -66,6 +66,8 @@
 			<string>Use PUBG Special Mode</string>
 			<key>PostNotification</key>
 			<string>com.fpsindicator/loadPref</string>
+			<key>requiresRestart</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -92,6 +94,8 @@
 			</array>
 			<key>PostNotification</key>
 			<string>com.fpsindicator/loadPref</string>
+			<key>requiresRestart</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
