@@ -26,6 +26,7 @@
 @property (nonatomic, assign) BOOL usePUBGSpecialMode;
 @property (nonatomic, assign) BOOL useMetalHooks;
 @property (nonatomic, assign) BOOL useQuartzCoreAPI;
+@property (nonatomic, assign) BOOL useCoreAnimationPerfHUD;
 @property (nonatomic, assign) CGFloat pubgRefreshRate;
 
 // Methods

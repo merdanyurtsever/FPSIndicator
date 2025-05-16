@@ -75,6 +75,7 @@
     _usePUBGSpecialMode = prefs[@"usePUBGSpecialMode"] ? [prefs[@"usePUBGSpecialMode"] boolValue] : YES;
     _useMetalHooks = prefs[@"useMetalHooks"] ? [prefs[@"useMetalHooks"] boolValue] : NO;
     _useQuartzCoreAPI = prefs[@"useQuartzCoreAPI"] ? [prefs[@"useQuartzCoreAPI"] boolValue] : NO;
+    _useCoreAnimationPerfHUD = prefs[@"useCoreAnimationPerfHUD"] ? [prefs[@"useCoreAnimationPerfHUD"] boolValue] : YES;
     _pubgRefreshRate = prefs[@"pubgRefreshRate"] ? [prefs[@"pubgRefreshRate"] floatValue] : 2.0;
     
     // Apply settings to PUBG support if it's initialized
@@ -145,6 +146,7 @@
     _prefsCache[@"usePUBGSpecialMode"] = @(self.usePUBGSpecialMode);
     _prefsCache[@"useMetalHooks"] = @(self.useMetalHooks);
     _prefsCache[@"useQuartzCoreAPI"] = @(self.useQuartzCoreAPI);
+    _prefsCache[@"useCoreAnimationPerfHUD"] = @(self.useCoreAnimationPerfHUD);
     _prefsCache[@"pubgRefreshRate"] = @(self.pubgRefreshRate);
     
     // Write to file

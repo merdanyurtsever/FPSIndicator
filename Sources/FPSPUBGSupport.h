@@ -33,6 +33,12 @@
 @property (nonatomic, assign) BOOL useQuartzCoreDebug;
 
 /**
+ * @property useCoreAnimationPerfHUD Whether to use the CA Perf HUD Module approach
+ * This is a more reliable way to get FPS data directly from CoreAnimation
+ */
+@property (nonatomic, assign) BOOL useCoreAnimationPerfHUD;
+
+/**
  * @property refreshRate How often to update the FPS counter (in Hz)
  */
 @property (nonatomic, assign) CGFloat refreshRate;

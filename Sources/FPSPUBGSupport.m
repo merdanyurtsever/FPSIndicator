@@ -10,6 +10,14 @@
 typedef double (*CARenderServerGetDebugValueFuncPtr)(int);
 static CARenderServerGetDebugValueFuncPtr CARenderServerGetDebugValue = NULL;
 
+// CoreAnimation Performance HUD Module API declarations
+typedef void* (*CAPerfHUDModuleCreateFuncPtr)(void);
+typedef double (*CAPerfHUDGetValueFuncPtr)(void* module, int index);
+
+static CAPerfHUDModuleCreateFuncPtr CAPerfHUDModuleCreate = NULL;
+static CAPerfHUDGetValueFuncPtr CAPerfHUDGetValue = NULL;
+static void* CAHUDModule = NULL;
+
 @implementation FPSPUBGSupport {
     CADisplayLink *_displayLink;
     NSTimeInterval _lastTimestamp;
@@ -27,6 +35,9 @@ static CARenderServerGetDebugValueFuncPtr CARenderServerGetDebugValue = NULL;
     
     // For delayed setup
     NSTimer *_delayedSetupTimer;
+    
+    // For CA Perf HUD tracking
+    BOOL _caHUDInitialized;
 }
 
 #pragma mark - Lifecycle
@@ -48,11 +59,13 @@ static CARenderServerGetDebugValueFuncPtr CARenderServerGetDebugValue = NULL;
         _lastFPSCalculationTime = 0;
         _currentFPS = 0;
         _hooked = NO;
+        _caHUDInitialized = NO;
         
         // Default settings
         _stealthMode = 1; // Medium stealth by default
         _pubgUiMode = 0; // Standard display by default
         _useQuartzCoreDebug = NO; // Off by default, requires special entitlements
+        _useCoreAnimationPerfHUD = YES; // On by default, more reliable than QuartzCore debug
         _refreshRate = 2.0; // 2Hz refresh rate by default for PUBG
     }
     return self;
@@ -80,8 +93,9 @@ static CARenderServerGetDebugValueFuncPtr CARenderServerGetDebugValue = NULL;
 - (void)initialize {
     // Add safeguards to make sure the tweak doesn't crash PUBG
     @try {
-        // Determine if we can use the QuartzCore debug API
-        if (_useQuartzCoreDebug) {
+        // Always try to initialize the QuartzCore debug API and CA Perf HUD
+        // This gives us the most accurate FPS data directly from CoreAnimation
+        if (_useQuartzCoreDebug || _useCoreAnimationPerfHUD) {
             [self tryLoadQuartzCoreDebugAPI];
         }
         
@@ -93,7 +107,9 @@ static CARenderServerGetDebugValueFuncPtr CARenderServerGetDebugValue = NULL;
         
         // Create a delayed setup to avoid early detection
         // Anti-cheat often scans early in the app lifecycle
-        CGFloat delay = (_stealthMode == 2) ? 10.0 : 5.0;
+        // Use longer delays for higher stealth modes
+        CGFloat delay = (_stealthMode == 2) ? 10.0 : 
+                        (_stealthMode == 1) ? 7.0 : 5.0;
         
         // Use a dispatch_after instead of NSTimer for better reliability
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), 
@@ -226,6 +242,20 @@ static CARenderServerGetDebugValueFuncPtr CARenderServerGetDebugValue = NULL;
         // Only proceed if we can verify the app is in a good state
         NSLog(@"FPSIndicator: App appears ready, proceeding with safe medium stealth setup");
         
+        // First try to use the CA Performance HUD if available
+        if (_useQuartzCoreDebug) {
+            [self tryLoadQuartzCoreDebugAPI];
+            
+            // If we have Core Animation Performance HUD working, use timer-based approach
+            // instead of display link to minimize anti-cheat detection
+            if (_caHUDInitialized || CARenderServerGetDebugValue) {
+                NSLog(@"FPSIndicator: Using QuartzCore API for FPS tracking with timer-based updates");
+                [self setupHUDBasedTimerMonitoring];
+                return;
+            }
+        }
+        
+        // Fall back to display link method if CoreAnimation HUD isn't available
         // Create a display link with careful error handling
         dispatch_async(dispatch_get_main_queue(), ^{
             @try {
@@ -356,16 +386,78 @@ static CARenderServerGetDebugValueFuncPtr CARenderServerGetDebugValue = NULL;
         } else {
             NSLog(@"FPSIndicator: Failed to load CARenderServerGetDebugValue function");
         }
+        
+        // Try to load CoreAnimation Performance HUD Module
+        if (_useCoreAnimationPerfHUD) {
+            [self tryLoadCAPerfHUDModule:quartzCore];
+        }
     } else {
         NSLog(@"FPSIndicator: Failed to load QuartzCore framework");
     }
 }
 
+- (void)tryLoadCAPerfHUDModule:(void*)quartzCore {
+    @try {
+        // First attempt - try to load the newer CoreAnimation Performance HUD Module API
+        CAPerfHUDModuleCreate = (CAPerfHUDModuleCreateFuncPtr)dlsym(quartzCore, "CAPerfHUDModuleCreate");
+        CAPerfHUDGetValue = (CAPerfHUDGetValueFuncPtr)dlsym(quartzCore, "CAPerfHUDGetValue");
+        
+        if (CAPerfHUDModuleCreate && CAPerfHUDGetValue) {
+            CAHUDModule = CAPerfHUDModuleCreate();
+            if (CAHUDModule) {
+                _caHUDInitialized = YES;
+                NSLog(@"FPSIndicator: Successfully initialized CA Performance HUD Module");
+                return;
+            }
+        }
+        
+        // Second attempt - try alternate symbol names that might be used
+        CAPerfHUDModuleCreate = (CAPerfHUDModuleCreateFuncPtr)dlsym(quartzCore, "_CAPerfHUDModuleCreate");
+        CAPerfHUDGetValue = (CAPerfHUDGetValueFuncPtr)dlsym(quartzCore, "_CAPerfHUDGetValue");
+        
+        if (CAPerfHUDModuleCreate && CAPerfHUDGetValue) {
+            CAHUDModule = CAPerfHUDModuleCreate();
+            if (CAHUDModule) {
+                _caHUDInitialized = YES;
+                NSLog(@"FPSIndicator: Successfully initialized CA Performance HUD Module (alternate symbols)");
+                return;
+            }
+        }
+        
+        NSLog(@"FPSIndicator: Failed to initialize CA Performance HUD Module");
+    } @catch (NSException *exception) {
+        NSLog(@"FPSIndicator: Exception loading CA Performance HUD Module: %@", exception);
+    }
+}
+
 - (double)getFPSFromQuartzCore {
+    // First try the CA Performance HUD Module if available
+    if (_caHUDInitialized && CAHUDModule && CAPerfHUDGetValue) {
+        @try {
+            // Try index 0, 1, and 2 which typically contain FPS information
+            double fps = CAPerfHUDGetValue(CAHUDModule, 1);
+            if (fps > 0 && fps <= 120) {
+                return fps;
+            }
+            
+            // If first index didn't work, try alternate indices
+            for (int i = 0; i < 5; i++) {
+                fps = CAPerfHUDGetValue(CAHUDModule, i);
+                if (fps > 0 && fps <= 120) {
+                    return fps;
+                }
+            }
+        } @catch (NSException *exception) {
+            NSLog(@"FPSIndicator: Exception getting FPS from CA Perf HUD: %@", exception);
+        }
+    }
+    
+    // Fall back to original method if CA Performance HUD not available
     if (CARenderServerGetDebugValue) {
         // FPS is at index 5 in the debug values array
         return CARenderServerGetDebugValue(5);
     }
+    
     return 0;
 }
 
@@ -471,6 +563,80 @@ static CARenderServerGetDebugValueFuncPtr CARenderServerGetDebugValue = NULL;
         });
     } else {
         NSLog(@"FPSIndicator: Failed to create GCD timer for maximum stealth monitoring");
+    }
+}
+
+- (void)setupHUDBasedTimerMonitoring {
+    // Clear any existing timers to prevent duplicates
+    [_displayLink invalidate];
+    _displayLink = nil;
+    
+    // This is a safer alternative that uses a timer instead of a display link
+    // Combined with the CoreAnimation HUD, it's less likely to be detected
+    
+    __weak typeof(self) weakSelf = self;
+    
+    // Use GCD timer - more reliable than NSTimer
+    dispatch_source_t timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, 
+                                                   dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0));
+    if (timer) {
+        // Set timer parameters - use refresh rate but no faster than 5Hz to avoid detection
+        CGFloat safeRate = MAX(1.0, MIN(5.0, _refreshRate));
+        uint64_t interval = (uint64_t)(1.0 / safeRate * NSEC_PER_SEC);
+        
+        dispatch_source_set_timer(timer, 
+                                dispatch_time(DISPATCH_TIME_NOW, interval), 
+                                interval, 
+                                100 * NSEC_PER_MSEC);
+        
+        // Set event handler
+        dispatch_source_set_event_handler(timer, ^{
+            typeof(self) strongSelf = weakSelf;
+            if (strongSelf) {
+                @try {
+                    // Get FPS directly from CoreAnimation HUD
+                    double fps = [strongSelf getFPSFromQuartzCore];
+                    
+                    // Apply smoothing to avoid jumpy values
+                    static double smoothedFPS = 0;
+                    if (smoothedFPS == 0) {
+                        smoothedFPS = fps;
+                    } else {
+                        smoothedFPS = smoothedFPS * 0.7 + fps * 0.3;
+                    }
+                    
+                    // Only update if we got a valid value
+                    if (fps > 0) {
+                        strongSelf->_currentFPS = smoothedFPS;
+                        
+                        // Update UI based on the selected mode
+                        if (strongSelf->_pubgUiMode > 0) {
+                            [[FPSPUBGUIIntegration sharedInstance] updateWithFPS:strongSelf->_currentFPS];
+                        } else {
+                            // Use the traditional approach
+                            dispatch_async(dispatch_get_main_queue(), ^{
+                                [[FPSAlternativeOverlay sharedInstance] showWithFPS:strongSelf->_currentFPS];
+                            });
+                        }
+                    }
+                } @catch (NSException *exception) {
+                    NSLog(@"FPSIndicator: Exception in HUD timer handler: %@", exception);
+                }
+            }
+        });
+        
+        // Start the timer
+        dispatch_resume(timer);
+        
+        NSLog(@"FPSIndicator: Started CoreAnimation HUD-based FPS monitoring at %.1f Hz", safeRate);
+        
+        // Initialize display with 0 FPS
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [[FPSAlternativeOverlay sharedInstance] showWithFPS:0.0];
+        });
+    } else {
+        NSLog(@"FPSIndicator: Failed to create GCD timer for HUD monitoring, falling back to alternative method");
+        [self setupMaximumStealthMonitoring];
     }
 }
 

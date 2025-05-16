@@ -43,6 +43,8 @@ static void loadPreferences() {
                 [[FPSPUBGSupport sharedInstance] setStealthMode:[[FPSPreferences sharedPreferences] pubgStealthMode]];
                 [[FPSPUBGSupport sharedInstance] setRefreshRate:[[FPSPreferences sharedPreferences] refreshRate]];
                 [[FPSPUBGSupport sharedInstance] setUseQuartzCoreDebug:[[FPSPreferences sharedPreferences] useQuartzDebug]];
+                [[FPSPUBGSupport sharedInstance] setUseCoreAnimationPerfHUD:[[FPSPreferences sharedPreferences] useCoreAnimationPerfHUD]];
+                [[FPSPUBGSupport sharedInstance] setPubgUiMode:[[FPSPreferences sharedPreferences] pubgUiMode]];
                 
                 // Initialize with safeguards
                 dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
@@ -125,6 +127,8 @@ static void handleScreenRecording() {
             [[FPSPUBGSupport sharedInstance] setStealthMode:[[FPSPreferences sharedPreferences] pubgStealthMode]];
             [[FPSPUBGSupport sharedInstance] setRefreshRate:[[FPSPreferences sharedPreferences] refreshRate]];
             [[FPSPUBGSupport sharedInstance] setUseQuartzCoreDebug:[[FPSPreferences sharedPreferences] useQuartzDebug]];
+            [[FPSPUBGSupport sharedInstance] setUseCoreAnimationPerfHUD:[[FPSPreferences sharedPreferences] useCoreAnimationPerfHUD]];
+            [[FPSPUBGSupport sharedInstance] setPubgUiMode:[[FPSPreferences sharedPreferences] pubgUiMode]];
             
             // Start with a longer delay to avoid anti-cheat detection
             // Different delay based on stealth mode
