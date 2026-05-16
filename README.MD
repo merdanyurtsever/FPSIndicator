@@ -16,12 +16,6 @@ A lightweight, non-intrusive FPS counter for iOS that works system-wide with a s
 - **Battery optimized** - Low power impact with adaptive refresh rate
 - **Screen recording awareness** - Automatically hides during screen recording
 
-## Installation
-
-1. Add the repository to your package manager: `https://repo.example.com`
-2. Search for "FPSIndicator" and install it
-3. Respring your device
-
 ## Usage
 
 After installation, a small FPS counter will appear in the top corner of your screen.
